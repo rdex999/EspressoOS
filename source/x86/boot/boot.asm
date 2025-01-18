@@ -50,6 +50,9 @@ start:
 
 	call check_long_mode
 
+	mov dword [0A0000h], 0AABBCCDDh
+	jmp $
+
 exit:
 	jmp 0xFFFF:0							; Far jump to the reset vector, this will reboot the PC
 	jmp exit								; This command should not run, but if it does then just continue looping doing nothing
@@ -78,11 +81,21 @@ check_long_mode:
 	cmp eax, ebx							; Compare the new value of EFLAGS to the old one
 	jne exit								; If its not the save, exit.
 
-	mov dword [0A0000h], 0AABBCCDDh
-	jmp $
-	
-	
 	;	PART 2
 	; Check for CPUID extended functions.
-	; TODO:
+	; After CPUID EAX=80000000h, EAX should be set to a value greater that 80000000h if extended functions are available.
+	mov eax, 80000000h						; CPUID function that checks for extended functions
+	cpuid									; Check for extended functions
+	cmp eax, 80000001h						; Check if the returned value is greater than 80000000h, if it is then there are extended functions
+	jb exit									; If there are no extended functions, exit
 
+	;	PART 3
+	; Check for long mode.
+	; By using the extended function CPUID EAX=80000001h, we can check for long mode.
+	; After the extended function, the LM bit (29th bit) of EDX should be 1 if long mode is available.
+	mov eax, 80000001h						; Set function number
+	cpuid									; Perform CPUID function
+	test edx, 1 << 29						; Check if the LM bit is set
+	jz exit									; If the LM bit is not set, there is no long mode so just exit.
+
+	ret	
