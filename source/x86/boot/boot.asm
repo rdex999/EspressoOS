@@ -32,6 +32,10 @@ multiboot2_header_start:
 	MULTIBOOT2_TAG 0, 0, 0					; End tag, specifies that there are to more tags.
 .end:
 
+section .bss
+resb 4096									; Allocate 4096 bytes for the stack
+stack_top:
+
 section .text
 
 ; When getting here, the following registers hold some special values.
@@ -39,22 +43,46 @@ section .text
 ;	EBX	=> Should point to the multiboot2 information structure (physical address)
 start:
 	cmp eax, 36D76289h						; Check magic number
-	jne invalid_magic						; If the magic number is invalid, error out and exit.
+	jne exit 								; If the magic number is invalid, error out and exit.
 
 	mov esp, stack_top						; Set up the stack.
 	push ebx								; Save multiboot2 information structure address.
 
-	; Creates three white pixels at the top left corner of the screen
+	call check_long_mode
+
+exit:
+	jmp 0xFFFF:0							; Far jump to the reset vector, this will reboot the PC
+	jmp exit								; This command should not run, but if it does then just continue looping doing nothing
+
+
+; Checks for long mode, jumps to the "exit" lable if long mode isnt supported.
+check_long_mode:
+	; This function has three parts.
+	; Part 1	=> Check for CPUID
+	; Part 2	=> Check for CPUID extended functions
+	; Part 3 	=> Check for long mode support
+
+	; 	PART 1
+	; Check for CPUID by trying to flip the 21st bit of EFLAGS. If it stays the same if CPUID is available.
+	pushfd									; Push the value of EFLAGS so we can get it
+	pop eax									; Get the value of EFLAGS
+	xor eax, 1 << 21						; Flip 21st bit
+	mov ebx, eax							; Save modified value, for checking if it has stayed the same
+
+	push eax								; Push the modified value of EFLAGS, so we can write it to EFLAGS
+	popfd									; Write new value into EFLAGS
+
+	pushfd									; Push the value of EFLAGS so we can get it
+	pop eax									; Get the value of EFLAGS after the write operation
+
+	cmp eax, ebx							; Compare the new value of EFLAGS to the old one
+	jne exit								; If its not the save, exit.
+
 	mov dword [0A0000h], 0AABBCCDDh
-	mov dword [0A0004h], 0AABBCCDDh
-	mov dword [0A0008h], 0AABBCCDDh
-
-invalid_magic:
+	jmp $
+	
+	
+	;	PART 2
+	; Check for CPUID extended functions.
 	; TODO:
-	; hlt
-	jmp invalid_magic
 
-section .bss
-
-resb 4096									; Allocate 4096 bytes for the stack
-stack_top:
