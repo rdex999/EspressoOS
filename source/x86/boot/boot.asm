@@ -6,8 +6,8 @@
 bits 32
 global start
 
-%define PG_PRESENT (1 << 0)
-%define PG_READ_WRITE (1 << 1)
+%include "x86/boot/gdt.inc"
+%include "x86/boot/lm_setup.inc"
 
 ; General multiboot2 tag.
 ; PARAMETERS
@@ -40,6 +40,7 @@ resb 4096									; Allocate 4096 bytes for the stack
 stack_top:
 
 section .text
+bits 32
 
 ; When getting here, the following registers hold some special values.
 ; 	EAX => Should hold the magic number 36D76289h, which indicates the OS was loaded by a multiboot2 compliant bootloader.
@@ -55,13 +56,13 @@ start:
 	call setup_page_tables
 	call enter_long_mode
 
+	bits 64
+
 	mov dword [0A0000h], 0AABBCCDDh
 	jmp $
 
 exit:
+	bits 32
+
 	jmp 0xFFFF:0							; Far jump to the reset vector, this will reboot the PC
 	jmp exit								; This command should not run, but if it does then just continue looping doing nothing
-
-
-%include "x86/boot/lm_setup.inc"
-%include "x86/boot/gdt.inc"

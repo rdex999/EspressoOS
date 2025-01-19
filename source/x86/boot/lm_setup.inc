@@ -2,6 +2,9 @@
 ; ---------------- [ LONG MODE SETUP FUNCTIONS ] ----------------
 ;
 
+%define PG_PRESENT (1 << 0)
+%define PG_READ_WRITE (1 << 1)
+
 section .text
 
 ; Checks for long mode, jumps to the "exit" lable if long mode isnt supported.
@@ -82,6 +85,8 @@ setup_page_tables:
 
 ; Enters 64 bit long mode.
 ; NOTE: After calling this function, all code after it must be 64 bit code. (do: "bits 64")
+; RETURNS:
+; 	- RDI	=> A pointer to the multiboot2 information structure.
 enter_long_mode:
 	; Enable PAE
 	mov eax, cr4                 			; Get the value of CR4
@@ -99,6 +104,17 @@ enter_long_mode:
 	or eax, 1 << 31							; Set PG bit
 	mov cr0, eax							; Write the new value back
 
-	; TODO: Setup the GDT here
+	pop eax									; Get this functions return address in EAX, because loading the GDT messes up the stack
+	pop edi									; Get the multiboot2 information structure pointer in EDI, as an argument for kernel_main
 
-	ret
+	lgdt [gdt.pointer]						; Load the 64 bit GDT
+	jmp GDT_CODE_SEL:.x64					; Switch to 64 bit long mode
+.x64:
+	bits 64
+
+	; Ignore NASM warnings on these two lines, its not overflowing
+	and rax, 0FFFFFFFFh						; Zero out the high 32 bits as the return address is 32 bit.
+	and rdi, 0FFFFFFFFh						; Zero out high 32 bits as the multiboot2 information structure pointer is 32 bits.
+
+	mov rsp, stack_top						; Setup the stack
+	jmp rax									; return from this function
