@@ -64,3 +64,4 @@ exit:
 
 
 %include "x86/boot/lm_setup.inc"
+%include "x86/boot/gdt.inc"
