@@ -79,3 +79,26 @@ setup_page_tables:
 	loop .pt_fill_loop						; Continue filling the tables
 
 	ret
+
+; Enters 64 bit long mode.
+; NOTE: After calling this function, all code after it must be 64 bit code. (do: "bits 64")
+enter_long_mode:
+	; Enable PAE
+	mov eax, cr4                 			; Get the value of CR4
+	or eax, 1 << 5               			; Set the PAE-bit (5th bit in CR4)
+	mov cr4, eax                 			; Write changes back to CR4
+
+	; Enable long mode bit in the EFER MSR (MSR - Model Specific Register)
+	mov ecx, 0C0000080h						; MSR to read, set it to the EFER MSR number
+	rdmsr									; Read EFER, get result in EDX:EAX
+	or eax, 1 << 8							; Set the LM (Long Mode) bit
+	wrmsr									; Write back the changes into EFER
+
+	; Set PG bit in CR0
+	mov eax, cr0							; Get the value of CR0
+	or eax, 1 << 31							; Set PG bit
+	mov cr0, eax							; Write the new value back
+
+	; TODO: Setup the GDT here
+
+	ret

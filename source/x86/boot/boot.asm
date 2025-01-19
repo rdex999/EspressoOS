@@ -53,6 +53,7 @@ start:
 
 	call check_long_mode
 	call setup_page_tables
+	call enter_long_mode
 
 	mov dword [0A0000h], 0AABBCCDDh
 	jmp $
