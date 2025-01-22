@@ -4,17 +4,19 @@ CC=g++
 AS=nasm
 LD=ld
 CFLAGS=-m64 -c -ffreestanding -Wall -Wextra -fno-stack-protector -fno-exceptions -fno-rtti -I $(SRC)/include
-# CFLAGS=-m64 -c -ffreestanding -std=gnu17 -Wall -Wextra -fno-stack-protector -I $(SRC)/include
 ASFLAGS=-f elf64 -I $(SRC)
 QEMU_FLAGS=-m 8192M -vga vmware -L /usr/share/OVMF/ -pflash /usr/share/OVMF/x64/OVMF_CODE.4m.fd
+ISO=dist/EspressoOS.iso
 DISK_IMG=dist/EspressoOS.img
 DISK_IMG_SIZE=$$((1 * 1024**3))
 
-# This rule requires root privileges for mounting and formating disk image partitions
-all: $(BLD)/kernel.obj
-	$(AS) $(ASFLAGS) -o $(BLD)/boot.obj $(SRC)/x86/boot/boot.asm
-	$(LD) -T config/linker.ld -o $(BLD)/kernel.bin $(BLD)/*.obj
+.DEFAULT_GOAL=iso
 
+.PHONY: image iso clean rundisk runiso
+
+# This rule requires root privileges for mounting and formating disk image partitions
+image: $(DISK_IMG)
+$(DISK_IMG): $(BLD)/kernel.bin
 	@# Create the bootloader image, it uses the grub config in config/grub/boot_grub.cfg
 	grub-mkstandalone -O x86_64-efi -o build/BOOTX64.EFI 	\
 		"boot/grub/grub.cfg=config/grub/boot_grub.cfg" 		\
@@ -60,12 +62,39 @@ all: $(BLD)/kernel.obj
 	losetup -d /dev/loop0
 	sync
 
+iso: $(ISO)
+$(ISO): $(BLD)/kernel.bin
+	@# Create the bootloader image, it uses the grub config in config/grub/iso_grub.cfg
+	grub-mkstandalone -O x86_64-efi -o build/BOOTX64.EFI 	\
+		"boot/grub/grub.cfg=config/grub/boot_grub.cfg" 		\
+		--directory /usr/lib/grub/x86_64-efi/
+
+	@# The "iso_disk" directory is the skeleton for the ISO image, so everything under it will be in the ISO image.
+
+	@# The config file should be located in the disk image at /boot/grub/grub.cfg,
+	@# and the kernel should be located at /boot/kernel.bin, so put it there.
+	mkdir -p iso_disk/boot/grub
+	cp config/grub/iso_grub.cfg iso_disk/boot/grub/grub.cfg
+	cp $(BLD)/kernel.bin iso_disk/boot
+
+	@# Create the ISO image.
+	grub-mkrescue -o $@ iso_disk 
+
+$(BLD)/kernel.bin: $(BLD)/kernel.obj $(BLD)/boot.obj
+	$(LD) -T config/linker.ld -o $@ $^
+
 $(BLD)/kernel.obj: $(SRC)/kernel/kernel.c $(SRC)/include/kernel/kernel.h
 	$(CC) $(CFLAGS) -o $@ $<
+
+$(BLD)/boot.obj: $(SRC)/x86/boot/boot.asm
+	$(AS) $(ASFLAGS) -o $@ $<
 
 clean:
 	rm -rf $(BLD)/*
 	rm -f dist/*
 
-run:
+rundisk: $(DISK_IMG)
 	qemu-system-x86_64 $(QEMU_FLAGS) -drive file=$(DISK_IMG)
+
+runiso: $(ISO)
+	qemu-system-x86_64 $(QEMU_FLAGS) -cdrom dist/EspressoOS.iso
