@@ -13,7 +13,7 @@ DEBUG_BREAKPOINT=kernel_main
 
 .DEFAULT_GOAL=iso
 
-.PHONY: image iso clean rundisk runiso debugimage
+.PHONY: image iso clean rundisk runiso debugimage debugiso
 
 # This rule requires root privileges for mounting and formating disk image partitions
 image: $(DISK_IMG)
