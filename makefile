@@ -3,16 +3,17 @@ BLD=build
 CC=g++
 AS=nasm
 LD=ld
-CFLAGS=-m64 -c -ffreestanding -Wall -Wextra -fno-stack-protector -fno-exceptions -fno-rtti -I $(SRC)/include
-ASFLAGS=-f elf64 -I $(SRC)
+export CFLAGS+=-m64 -c -ffreestanding -Wall -Wextra -fno-stack-protector -fno-exceptions -fno-rtti -I $(SRC)/include
+export ASFLAGS+=-f elf64 -I $(SRC)
 QEMU_FLAGS=-m 8192M -vga vmware -L /usr/share/OVMF/ -pflash /usr/share/OVMF/x64/OVMF_CODE.4m.fd
 ISO=dist/EspressoOS.iso
 DISK_IMG=dist/EspressoOS.img
 DISK_IMG_SIZE=$$((1 * 1024**3))
+DEBUG_BREAKPOINT=kernel_main
 
 .DEFAULT_GOAL=iso
 
-.PHONY: image iso clean rundisk runiso
+.PHONY: image iso clean rundisk runiso debugimage
 
 # This rule requires root privileges for mounting and formating disk image partitions
 image: $(DISK_IMG)
@@ -90,11 +91,30 @@ $(BLD)/boot.obj: $(SRC)/x86/boot/boot.asm
 	$(AS) $(ASFLAGS) -o $@ $<
 
 clean:
-	rm -rf $(BLD)/*
-	rm -f dist/*
+	rm -rf $(BLD)/* dist/* iso_disk
 
-rundisk: $(DISK_IMG)
-	qemu-system-x86_64 $(QEMU_FLAGS) -drive file=$(DISK_IMG)
+runimage: $(DISK_IMG)
+	qemu-system-x86_64 $(QEMU_FLAGS) -drive file=$<
 
 runiso: $(ISO)
-	qemu-system-x86_64 $(QEMU_FLAGS) -cdrom dist/EspressoOS.iso
+	qemu-system-x86_64 $(QEMU_FLAGS) -cdrom $<
+
+debugimage:
+	$(MAKE) clean
+	$(MAKE) image CFLAGS+=-g ASFLAGS+=-g
+	qemu-system-x86_64 $(QEMU_FLAGS) -drive file=$(DISK_IMG) -S -s &
+	gdb $(BLD)/kernel.bin 								\
+        -ex "target remote localhost:1234" 				\
+        -ex "set disassembly-flavor intel" 				\
+        -ex "break $(DEBUG_BREAKPOINT)" -ex "continue" 	\
+        -ex "lay src"
+
+debugiso:
+	$(MAKE) clean
+	$(MAKE) iso CFLAGS+=-g ASFLAGS+=-g
+	qemu-system-x86_64 $(QEMU_FLAGS) -cdrom $(ISO) -S -s &
+	gdb $(BLD)/kernel.bin 								\
+		-ex "target remote localhost:1234" 				\
+		-ex "set disassembly-flavor intel" 				\
+		-ex "break $(DEBUG_BREAKPOINT)" -ex "continue" 	\
+		-ex "lay src"
