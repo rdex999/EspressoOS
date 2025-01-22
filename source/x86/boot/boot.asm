@@ -5,6 +5,7 @@
 ; This file containes the multiboot2 header, and the first and most basic initialization code for the operating system.
 bits 32
 global start
+extern kernel_main
 
 %include "x86/boot/gdt.inc"
 %include "x86/boot/lm_setup.inc"
@@ -49,6 +50,7 @@ start:
 	cmp eax, 36D76289h						; Check magic number
 	jne exit 								; If the magic number is invalid, error out and exit.
 
+	cli										; Disable interrupts because interrupt handlers are not set up yet.
 	mov esp, stack_top						; Set up the stack.
 	push ebx								; Save multiboot2 information structure address.
 
@@ -58,8 +60,7 @@ start:
 
 	bits 64
 
-	mov dword [0A0000h], 0AABBCCDDh
-	jmp $
+	call kernel_main
 
 exit:
 	bits 32

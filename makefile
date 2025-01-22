@@ -1,18 +1,19 @@
 SRC=source
 BLD=build
-CC=gcc
+CC=g++
 AS=nasm
 LD=ld
-CFLAGS=
+CFLAGS=-m64 -c -ffreestanding -Wall -Wextra -fno-stack-protector -fno-exceptions -fno-rtti -I $(SRC)/include
+# CFLAGS=-m64 -c -ffreestanding -std=gnu17 -Wall -Wextra -fno-stack-protector -I $(SRC)/include
 ASFLAGS=-f elf64 -I $(SRC)
 QEMU_FLAGS=-m 8192M -vga vmware -L /usr/share/OVMF/ -pflash /usr/share/OVMF/x64/OVMF_CODE.4m.fd
 DISK_IMG=dist/EspressoOS.img
 DISK_IMG_SIZE=$$((1 * 1024**3))
 
 # This rule requires root privileges for mounting and formating disk image partitions
-all:
+all: $(BLD)/kernel.obj
 	$(AS) $(ASFLAGS) -o $(BLD)/boot.obj $(SRC)/x86/boot/boot.asm
-	$(LD) -T config/linker.ld -o $(BLD)/kernel.bin $(BLD)/boot.obj
+	$(LD) -T config/linker.ld -o $(BLD)/kernel.bin $(BLD)/*.obj
 
 	@# Create the bootloader image, it uses the grub config in config/grub/boot_grub.cfg
 	grub-mkstandalone -O x86_64-efi -o build/BOOTX64.EFI 	\
@@ -58,6 +59,9 @@ all:
 	umount /mnt
 	losetup -d /dev/loop0
 	sync
+
+$(BLD)/kernel.obj: $(SRC)/kernel/kernel.c $(SRC)/include/kernel/kernel.h
+	$(CC) $(CFLAGS) -o $@ $<
 
 clean:
 	rm -rf $(BLD)/*
