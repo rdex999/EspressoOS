@@ -1,7 +1,10 @@
 {
 	"files.associations": {
-		"kernel.h": "c",
-		"stdint.h": "c",
-		"multiboot2.h": "c"
+		"EspressoOS/*.h": "cpp",
+		"EspressoOS/*.c": "cpp",
+		"*.h": "cpp",
+		"*.c": "cpp",
+		"cstdlib": "cpp",
+		"cstddef": "cpp"
 	}
 }

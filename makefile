@@ -81,7 +81,7 @@ $(ISO): $(BLD)/kernel.bin
 	@# Create the ISO image.
 	grub-mkrescue -o $@ iso_disk 
 
-$(BLD)/kernel.bin: $(BLD)/kernel.obj $(BLD)/boot.obj
+$(BLD)/kernel.bin: $(BLD)/kernel.obj $(BLD)/boot.obj $(BLD)/multiboot.obj
 	$(LD) -T config/linker.ld -o $@ $^
 
 $(BLD)/kernel.obj: $(SRC)/kernel/kernel.c $(SRC)/include/kernel/kernel.h
@@ -89,6 +89,9 @@ $(BLD)/kernel.obj: $(SRC)/kernel/kernel.c $(SRC)/include/kernel/kernel.h
 
 $(BLD)/boot.obj: $(SRC)/x86/boot/boot.asm
 	$(AS) $(ASFLAGS) -o $@ $<
+
+$(BLD)/multiboot.obj: $(SRC)/multiboot/multiboot.c
+	$(CC) $(CFLAGS) -o $@ $<
 
 clean:
 	rm -rf $(BLD)/* dist/* iso_disk
