@@ -15,34 +15,23 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "kernel/kernel.h"
+#pragma once
 
-#include "string.h"
-#include "mm/pmm/pmm.h"
+#include <multiboot.h>
+#include <stdint.h>
+#include <stddef.h>
 
-#define VIDEO ((uint32_t*)0xA0000)
+#define PMM_BLOCK_SIZE 4096
+#define KERNEL_END (void*)&_kernel_end
+#define PMM_BITMAP_ADDRESS KERNEL_END
 
-#ifdef __cplusplus
-	extern "C"
-#endif
-void kernel_main(multiboot_info_t* mbd)
+/* Each bit specifies an available(0) or unavailable(1) memory block of PMM_BLOCK_SIZE bytes. */
+typedef struct pmm_bitmap
 {
-	VIDEO[0] = 0x00FF0000;	/* RED */
-	VIDEO[1] = 0x0000FF00;	/* GREEN */
-	VIDEO[2] = 0x000000FF;	/* BLUE */
+	uint64_t bitmap[0];
+} pmm_bitmap_t;
 
-	multiboot_tag_mmap_t* tag = (multiboot_tag_mmap_t*)mbd->find_tag(MULTIBOOT_TAG_TYPE_MMAP);
-	multiboot_mmap_entry_t* m0 = tag->index(0);
-	multiboot_mmap_entry_t* m1 = tag->index(1);
-	multiboot_mmap_entry_t* m2 = tag->index(2);
+extern uint64_t _kernel_end;
+extern pmm_bitmap_t* pmm_bitmap;	/* A pointer to the bitmap, defined in pmm.c */
 
-	pmm_init(tag);
-
-	memset(&VIDEO[3], 0xFF, 1024);
-
-	while(1)
-	{
-		asm("cli");
-		asm("hlt");
-	}
-}
+void pmm_init(multiboot_tag_mmap_t* mmap);

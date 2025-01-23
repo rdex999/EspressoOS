@@ -98,17 +98,20 @@ $(ISO): $(BLD)/kernel.bin
 	@# Create the ISO image.
 	grub-mkrescue -o $@ iso_disk 
 
-$(BLD)/kernel.bin: $(BLD)/kernel.obj $(BLD)/boot.obj $(BLD)/multiboot.obj $(BLD)/libk/libk.lib
+$(BLD)/kernel.bin: $(BLD)/kernel.obj $(BLD)/boot.obj $(BLD)/multiboot.obj $(BLD)/libk/libk.lib $(BLD)/pmm.obj
 	$(LD) -T config/linker.ld -o $@ $^
 
 $(BLD)/%.obj: $(SRC)/%.c $(SRC)/include/%.h
 	$(CC) $(CFLAGS) -o $@ $<
 
+$(BLD)/boot.obj: $(SRC)/x86/boot/boot.asm
+	$(AS) $(ASFLAGS) -o $@ $<
+
 $(BLD)/kernel.obj: $(SRC)/kernel/kernel.c $(SRC)/include/kernel/kernel.h
 	$(CC) $(CFLAGS) -o $@ $<
 
-$(BLD)/boot.obj: $(SRC)/x86/boot/boot.asm
-	$(AS) $(ASFLAGS) -o $@ $<
+$(BLD)/pmm.obj: $(SRC)/mm/pmm/pmm.c $(SRC)/include/mm/pmm/pmm.h
+	$(CC) $(CFLAGS) -o $@ $<
 
 $(BLD)/libk/libk.lib: $(BLD)/libk/string.obj
 	ld -r -o $@ $^
