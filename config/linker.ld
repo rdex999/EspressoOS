@@ -1,3 +1,20 @@
+# 
+# This file is part of the EspressoOS project (https://github.com/rdex999/EspressoOS.git).
+# Copyright (c) 2025 David Weizman.
+# 
+# This program is free software: you can redistribute it and/or modify  
+# it under the terms of the GNU General Public License as published by  
+# the Free Software Foundation, version 3.
+# 
+# This program is distributed in the hope that it will be useful, but 
+# WITHOUT ANY WARRANTY; without even the implied warranty of 
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU 
+# General Public License for more details.
+# 
+# You should have received a copy of the GNU General Public License 
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
+#
+
 # This file specifies the structure of the kernel.bin file.
 # Code sections, symbols, all of that goes here.
 
@@ -13,20 +30,25 @@ SECTIONS
 
 	# set _text to the .text sections start address.
 	_text = .;
+
 	# All code goes next, after the multiboot2 header
 	.text : { *(.text) }
+
 	# Set _etext to the .text section end address
 	_etext = .;
 
 	# After the code, put all data here (.data section)
 	.data : { *(.data) }
+
 	# Also needed, "rodata" stands for Read Only Data
 	.rodata : { *(.rodata) }
+
 	# Set _edata to the data sections end address
 	_edata = .;
 
 	# Next put the .bss section, its basically the same as the data section but its used  more for global variables and stuff.
 	.bss : { *(.bss) }
+
 	# Set _ebss to the .bss section end address.
 	_ebss = .;
 
