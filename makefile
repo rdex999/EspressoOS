@@ -84,14 +84,14 @@ $(ISO): $(BLD)/kernel.bin
 $(BLD)/kernel.bin: $(BLD)/kernel.obj $(BLD)/boot.obj $(BLD)/multiboot.obj
 	$(LD) -T config/linker.ld -o $@ $^
 
+$(BLD)/%.obj: $(SRC)/%.c $(SRC)/include/%.h
+	$(CC) $(CFLAGS) -o $@ $<
+
 $(BLD)/kernel.obj: $(SRC)/kernel/kernel.c $(SRC)/include/kernel/kernel.h
 	$(CC) $(CFLAGS) -o $@ $<
 
 $(BLD)/boot.obj: $(SRC)/x86/boot/boot.asm
 	$(AS) $(ASFLAGS) -o $@ $<
-
-$(BLD)/multiboot.obj: $(SRC)/multiboot/multiboot.c
-	$(CC) $(CFLAGS) -o $@ $<
 
 clean:
 	rm -rf $(BLD)/* dist/* iso_disk

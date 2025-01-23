@@ -289,6 +289,10 @@ struct multiboot_tag_mmap
   uint32_t entry_size;
   uint32_t entry_version;
   struct multiboot_mmap_entry entries[0];  
+
+  inline multiboot_mmap_entry_t* index(size_t i) const 
+    { return (multiboot_mmap_entry_t*)((uint8_t*)entries + i * entry_size); }
+
 } __attribute__((packed));
 
 struct multiboot_vbe_info_block
