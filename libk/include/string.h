@@ -15,18 +15,9 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "multiboot.h"
-#include "common.h"
+#pragma once
 
-multiboot_tag_t* multiboot_info::find_tag(uint32_t type)
-{
-    multiboot_tag* tag = tags;
-    while((uint64_t)tag - (uint64_t)this < size && tag->type != MULTIBOOT_TAG_TYPE_END)
-    {
-        if(tag->type == type)
-            return tag;
+#include <stdint.h>
+#include <stddef.h>
 
-        tag = (multiboot_tag*)(ALIGN((uint64_t)tag + tag->size, MULTIBOOT_TAG_ALIGN));
-    }
-    return NULL;
-}
+void* memset(void* dest, int ch, size_t size);

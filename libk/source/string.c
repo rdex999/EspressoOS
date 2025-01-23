@@ -15,18 +15,13 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "multiboot.h"
-#include "common.h"
+#include "string.h"
 
-multiboot_tag_t* multiboot_info::find_tag(uint32_t type)
+// TODO: Optimize this function.
+void* memset(void* dest, int ch, size_t size)
 {
-    multiboot_tag* tag = tags;
-    while((uint64_t)tag - (uint64_t)this < size && tag->type != MULTIBOOT_TAG_TYPE_END)
-    {
-        if(tag->type == type)
-            return tag;
-
-        tag = (multiboot_tag*)(ALIGN((uint64_t)tag + tag->size, MULTIBOOT_TAG_ALIGN));
-    }
-    return NULL;
+	unsigned char* d = (unsigned char*)dest;
+	for(size_t i = 0; i < size; i++)
+		d[i] = (unsigned char)ch;
+	return dest;
 }

@@ -17,6 +17,8 @@
 
 #include "kernel/kernel.h"
 
+#include "string.h"
+
 #define VIDEO ((uint32_t*)0xA0000)
 
 #ifdef __cplusplus
@@ -33,6 +35,7 @@ void kernel_main(multiboot_info_t* mbd)
 	multiboot_mmap_entry_t* m1 = tag->index(1);
 	multiboot_mmap_entry_t* m2 = tag->index(2);
 
+	memset(&VIDEO[3], 0xFF, 1024);
 
 	while(1)
 	{

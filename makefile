@@ -20,7 +20,9 @@ BLD=build
 CC=g++
 AS=nasm
 LD=ld
-export CFLAGS+=-m64 -c -ffreestanding -Wall -Wextra -fno-stack-protector -fno-exceptions -fno-rtti -I $(SRC)/include
+export CFLAGS+=-m64 -c -ffreestanding -Wall -Wextra \
+	-fno-stack-protector -fno-exceptions -fno-rtti 	\
+	-I $(SRC)/include -I libk/include
 export ASFLAGS+=-f elf64 -I $(SRC)
 QEMU_FLAGS=-m 8192M -vga vmware -L /usr/share/OVMF/ -pflash /usr/share/OVMF/x64/OVMF_CODE.4m.fd
 ISO=dist/EspressoOS.iso
@@ -30,10 +32,13 @@ DEBUG_BREAKPOINT=kernel_main
 
 .DEFAULT_GOAL=iso
 
-.PHONY: image iso clean rundisk runiso debugimage debugiso
+.PHONY: all image iso clean rundisk runiso debugimage debugiso
+
+all:
+	mkdir -p $(BLD)/libk disk
 
 # This rule requires root privileges for mounting and formating disk image partitions
-image: $(DISK_IMG)
+image: all $(DISK_IMG)
 $(DISK_IMG): $(BLD)/kernel.bin
 	@# Create the bootloader image, it uses the grub config in config/grub/boot_grub.cfg
 	grub-mkstandalone -O x86_64-efi -o build/BOOTX64.EFI 	\
@@ -80,7 +85,7 @@ $(DISK_IMG): $(BLD)/kernel.bin
 	losetup -d /dev/loop0
 	sync
 
-iso: $(ISO)
+iso: all $(ISO)
 $(ISO): $(BLD)/kernel.bin
 	@# The "iso_disk" directory is the skeleton for the ISO image, so everything under it will be in the ISO image.
 
@@ -93,7 +98,7 @@ $(ISO): $(BLD)/kernel.bin
 	@# Create the ISO image.
 	grub-mkrescue -o $@ iso_disk 
 
-$(BLD)/kernel.bin: $(BLD)/kernel.obj $(BLD)/boot.obj $(BLD)/multiboot.obj
+$(BLD)/kernel.bin: $(BLD)/kernel.obj $(BLD)/boot.obj $(BLD)/multiboot.obj $(BLD)/libk/libk.lib
 	$(LD) -T config/linker.ld -o $@ $^
 
 $(BLD)/%.obj: $(SRC)/%.c $(SRC)/include/%.h
@@ -104,6 +109,12 @@ $(BLD)/kernel.obj: $(SRC)/kernel/kernel.c $(SRC)/include/kernel/kernel.h
 
 $(BLD)/boot.obj: $(SRC)/x86/boot/boot.asm
 	$(AS) $(ASFLAGS) -o $@ $<
+
+$(BLD)/libk/libk.lib: $(BLD)/libk/string.obj
+	ld -r -o $@ $^
+
+$(BLD)/libk/string.obj: libk/source/string.c libk/include/string.h
+	$(CC) $(CFLAGS) -o $@ $<
 
 clean:
 	rm -rf $(BLD)/* dist/* iso_disk
