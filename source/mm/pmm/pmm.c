@@ -38,6 +38,11 @@ void pmm_bitmap_free(size_t block)
 	PMM_BITMAP[block / PMM_BITMAP_BITS_IN_ENTRY] &= ~(1llu << (block % PMM_BITMAP_BITS_IN_ENTRY));
 }
 
+bool pmm_bitmap_is_free(size_t block)
+{
+	return (PMM_BITMAP[block / PMM_BITMAP_BITS_IN_ENTRY] & (1llu << (block % PMM_BITMAP_BITS_IN_ENTRY))) == 0;
+}
+
 /* TODO: Optimize the for loops in pmm_bitmap_alloc_blocks and pmm_bitmap_free_blocks */
 
 void pmm_bitmap_alloc_blocks(size_t start_block, size_t count)
@@ -53,13 +58,13 @@ void pmm_bitmap_alloc_blocks(size_t start_block, size_t count)
 	}
 
 	/* Finish the first entry, then if there are more check if using memset is possible */
-	size_t filled_in_block = MIN(PMM_BITMAP_BITS_IN_ENTRY - bit_index, count);
-	for(size_t i = 0; i < filled_in_block; i++)
+	size_t first_entry_blocks = MIN(PMM_BITMAP_BITS_IN_ENTRY - bit_index, count);
+	for(size_t i = 0; i < first_entry_blocks; i++)
 		pmm_bitmap_alloc(start_block + i);
 
 	++entry_index;											/* Finished the first entry, so go to the next one */
-	count -= filled_in_block;								/* Decrease the amount of blocks left to allocate */
-	start_block += filled_in_block;							/* Increase start_block so it points to the next block */
+	count -= first_entry_blocks;							/* Decrease the amount of blocks left to allocate */
+	start_block += first_entry_blocks;						/* Increase start_block so it points to the next block */
 
 	/* <count> Can only be greater or equal to zero. If there are no more blocks to allocate, return. */
 	if (count == 0)
@@ -93,13 +98,13 @@ void pmm_bitmap_free_blocks(size_t start_block, size_t count)
 	}
 
 	/* Finish the first entry, then if there are more check if using memset is possible */
-	size_t full_blocks = MIN(PMM_BITMAP_BITS_IN_ENTRY - bit_index, count);
-	for(size_t i = 0; i < full_blocks; i++)
+	size_t first_entry_blocks = MIN(PMM_BITMAP_BITS_IN_ENTRY - bit_index, count);
+	for(size_t i = 0; i < first_entry_blocks; i++)
 		pmm_bitmap_free(start_block + i);
 
 	++entry_index;											/* Finished the first entry, so go to the next one */
-	count -= full_blocks;									/* Decrease the amount of blocks left to free */
-	start_block += full_blocks;								/* Increase start_block so it points to the next block */
+	count -= first_entry_blocks;							/* Decrease the amount of blocks left to free */
+	start_block += first_entry_blocks;						/* Increase start_block so it points to the next block */
 
 	/* <count> Can only be greater or equal to zero. If there are no more blocks to free, return. */
 	if (count == 0)
@@ -118,4 +123,14 @@ void pmm_bitmap_free_blocks(size_t start_block, size_t count)
 	/* Free the blocks that were not freed in the memset */
 	for(size_t i = 0; i < count; i++)
 		pmm_bitmap_free(start_block + i);
+}
+
+size_t pmm_bitmap_addr_to_block(uint64_t address)
+{
+	return address / PMM_BLOCK_SIZE;
+}
+
+uint64_t pmm_bitmap_block_to_addr(size_t block)
+{
+	return block * PMM_BLOCK_SIZE;
 }

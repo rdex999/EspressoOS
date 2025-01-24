@@ -48,10 +48,21 @@ void kernel_main(multiboot_info_t* mbd)
 	pmm_bitmap_alloc_blocks(23, 200);
 	pmm_bitmap_alloc_blocks(200+23+5, 7);
 
+	bool free0 = pmm_bitmap_is_free(0);
+	bool free4 = pmm_bitmap_is_free(1);
+	bool free228 = pmm_bitmap_is_free(200 + 23 + 5);
+
 	pmm_bitmap_free_blocks(0, 5);
 	pmm_bitmap_free_blocks(7, 11);
 	pmm_bitmap_free_blocks(200+23+5, 7);
 	pmm_bitmap_free_blocks(23, 200);
+	
+	free0 = pmm_bitmap_is_free(0);
+	free4 = pmm_bitmap_is_free(1);
+	free228 = pmm_bitmap_is_free(200 + 23 + 5);
+
+	uint64_t addr = pmm_bitmap_block_to_addr(200 + 23 + 5);
+	size_t block = pmm_bitmap_addr_to_block(addr);
 
 	memset(&VIDEO[3], 0xFF, 1024);
 

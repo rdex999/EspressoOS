@@ -45,10 +45,13 @@ extern size_t pmm_used_blocks;
 void pmm_init(multiboot_tag_mmap_t* mmap);
 
 /* Marks a memory block as used in the bitmap */
-void pmm_bitmap_alloc(size_t block);					
+void pmm_bitmap_alloc(size_t block);
 
 /* Marks a memory block as free in the bitmap */
-void pmm_bitmap_free(size_t block);						
+void pmm_bitmap_free(size_t block);
+
+/* Check if a memory block is free */
+bool pmm_bitmap_is_free(size_t block);
 
 /* Mark <count> blocks as used in the bitmap */
 void pmm_bitmap_alloc_blocks(size_t start_block, size_t count);
@@ -56,11 +59,8 @@ void pmm_bitmap_alloc_blocks(size_t start_block, size_t count);
 /* Mark <count> blocks as free in the bitmap */
 void pmm_bitmap_free_blocks(size_t start_block, size_t count);
 
-/* Check if a memory block is free */
-bool pmm_bitmap_is_free(size_t block);					
-
 /* Converts a physical address to its index in the bitmap (block) */
-size_t pmm_bitmap_addr_to_block(uint64_t address);		
+size_t pmm_bitmap_addr_to_block(uint64_t address);
 
 /* Converts a bitmap index (block) into its physical address */
-uint64_t pmm_bitmap_block_to_addr(size_t block);		
+uint64_t pmm_bitmap_block_to_addr(size_t block);
