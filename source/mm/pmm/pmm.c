@@ -17,8 +17,11 @@
 
 #include "mm/pmm/pmm.h"
 
-pmm_bitmap_t* pmm_bitmap = (pmm_bitmap_t*)PMM_BITMAP_ADDRESS;
+/* A value of -1 indicates these are uninitialized. pmm_init() Should initialize them */
+size_t pmm_total_blocks	= -1;
+size_t pmm_free_blocks 	= -1;
+size_t pmm_used_blocks 	= -1;
 
-void pmm_init(multiboot_tag_mmap_t* mmap)
+void pmm_init(multiboot_tag_mmap_t*)
 {
 }

@@ -17,21 +17,48 @@
 
 #pragma once
 
-#include <multiboot.h>
+#include <string.h>
+#include "multiboot.h"
+#include "common.h"
 #include <stdint.h>
 #include <stddef.h>
 
+typedef uint64_t* pmm_bitmap_t;
+
 #define PMM_BLOCK_SIZE 4096
-#define KERNEL_END (void*)&_kernel_end
 #define PMM_BITMAP_ADDRESS KERNEL_END
 
 /* Each bit specifies an available(0) or unavailable(1) memory block of PMM_BLOCK_SIZE bytes. */
-typedef struct pmm_bitmap
-{
-	uint64_t bitmap[0];
-} pmm_bitmap_t;
+#define PMM_BITMAP ((pmm_bitmap_t)PMM_BITMAP_ADDRESS)
+#define PMM_BITMAP_SIZE (pmm_total_blocks / (sizeof(pmm_bitmap_t) * 8))		/* The size of the bitmap in bytes. */
 
-extern uint64_t _kernel_end;
-extern pmm_bitmap_t* pmm_bitmap;	/* A pointer to the bitmap, defined in pmm.c */
+/* Dont cancle me for using globals, there isnt realy a better way for doing this */
+extern size_t pmm_total_blocks;
+extern size_t pmm_free_blocks;
+extern size_t pmm_used_blocks;
 
+/* NOTE: usualy, "block" referse to a bit in the bitmap */
+
+/* Initializes the physical memory manager */
 void pmm_init(multiboot_tag_mmap_t* mmap);
+
+/* Marks a memory block as used in the bitmap */
+void pmm_bitmap_alloc(size_t block);					
+
+/* Marks a memory block as free in the bitmap */
+void pmm_bitmap_free(size_t block);						
+
+/* Mark <count> blocks as used in the bitmap */
+void pmm_bitmap_alloc_blocks(size_t start_block, size_t count);
+
+/* Mark <count> blocks as free in the bitmap */
+void pmm_bitmap_free_blocks(size_t start_block, size_t count);
+
+/* Check if a memory block is free */
+bool pmm_bitmap_is_free(size_t block);					
+
+/* Converts a physical address to its index in the bitmap (block) */
+size_t pmm_bitmap_addr_to_block(uint64_t address);		
+
+/* Converts a bitmap index (block) into its physical address */
+uint64_t pmm_bitmap_block_to_addr(size_t block);		

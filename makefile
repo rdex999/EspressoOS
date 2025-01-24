@@ -35,7 +35,7 @@ DEBUG_BREAKPOINT=kernel_main
 .PHONY: all image iso clean rundisk runiso debugimage debugiso
 
 all:
-	mkdir -p $(BLD)/libk disk
+	mkdir -p $(BLD)/libk
 
 # This rule requires root privileges for mounting and formating disk image partitions
 image: all $(DISK_IMG)
@@ -122,11 +122,11 @@ $(BLD)/libk/string.obj: libk/source/string.c libk/include/string.h
 clean:
 	rm -rf $(BLD)/* dist/* iso_disk
 
-runimage: $(DISK_IMG)
-	qemu-system-x86_64 $(QEMU_FLAGS) -drive file=$<
+runimage: image
+	qemu-system-x86_64 $(QEMU_FLAGS) -drive file=$(DISK_IMG)
 
-runiso: $(ISO)
-	qemu-system-x86_64 $(QEMU_FLAGS) -cdrom $<
+runiso: iso
+	qemu-system-x86_64 $(QEMU_FLAGS) -cdrom $(ISO)
 
 debugimage:
 	$(MAKE) clean
