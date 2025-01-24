@@ -24,4 +24,57 @@ size_t pmm_used_blocks 	= -1;
 
 void pmm_init(multiboot_tag_mmap_t*)
 {
+	memset(PMM_BITMAP, 0, 1024);
+}
+
+void pmm_bitmap_alloc(size_t block)
+{
+	uint64_t index = block / PMM_BITMAP_BITS_IN_ENTRY;
+	uint64_t value = 1llu << (block % PMM_BITMAP_BITS_IN_ENTRY);
+	PMM_BITMAP[index] |= value;
+}
+
+void pmm_bitmap_free(size_t block)
+{
+	PMM_BITMAP[block / PMM_BITMAP_BITS_IN_ENTRY] &= ~(1 << (block % PMM_BITMAP_BITS_IN_ENTRY));
+}
+
+/* TODO: Optimize the for loops in pmm_bitmap_alloc_blocks */
+
+void pmm_bitmap_alloc_blocks(size_t start_block, size_t count)
+{
+	size_t entry_index = start_block / PMM_BITMAP_BITS_IN_ENTRY;
+	int bit_index = start_block % PMM_BITMAP_BITS_IN_ENTRY;
+
+	/* If <start_block> and <count> both start and end at an index, we can just memset the memory to 1 */
+	if(bit_index == 0 && count % PMM_BITMAP_BITS_IN_ENTRY == 0)
+	{
+		memset(&PMM_BITMAP[entry_index], 0xFF, (count / PMM_BITMAP_BITS_IN_ENTRY) * PMM_BITMAP_BYTES_IN_ENTRY);
+		return;
+	}
+
+	/* Finish the first entry, then if there are more check if using memset is possible */
+	size_t filled_in_block = MIN(PMM_BITMAP_BITS_IN_ENTRY - bit_index, count);
+	for(size_t i = 0; i < filled_in_block; i++)
+		pmm_bitmap_alloc(start_block + i);
+
+	++entry_index;											/* Finished the first entry, so go to the next one */
+	count -= filled_in_block;								/* Decrease the amount of blocks left to allocate */
+	start_block += filled_in_block;							/* Increase start_block so it points to the next block */
+
+	/* <count> Can only be greater or equal to zero. If there are no more blocks to allocate, return. */
+	if (count == 0)
+		return;
+
+	size_t full_entries = count / PMM_BITMAP_BITS_IN_ENTRY;
+	if(full_entries > 0)
+	{
+		memset(&PMM_BITMAP[entry_index], 0xFF, full_entries * PMM_BITMAP_BYTES_IN_ENTRY);
+		// entry_index += full_entries;
+		count -= full_entries * PMM_BITMAP_BITS_IN_ENTRY;
+		start_block += full_entries * PMM_BITMAP_BITS_IN_ENTRY;
+	}
+
+	for(size_t i = 0; i < count; i++)
+		pmm_bitmap_alloc(start_block + i);
 }

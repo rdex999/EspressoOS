@@ -32,8 +32,22 @@ void kernel_main(multiboot_info_t* mbd)
 	VIDEO[2] = 0x000000FF;	/* BLUE */
 
 	multiboot_tag_mmap_t* tag = (multiboot_tag_mmap_t*)mbd->find_tag(MULTIBOOT_TAG_TYPE_MMAP);
-	
+
+	pmm_bitmap_t bitmap = PMM_BITMAP;
+
 	pmm_init(tag);
+
+	pmm_bitmap_alloc(0);
+	pmm_bitmap_alloc(31);
+
+	pmm_bitmap_free(0);
+	pmm_bitmap_free(31);
+
+	pmm_bitmap_alloc_blocks(0, 5);
+	pmm_bitmap_alloc_blocks(7, 11);
+
+	pmm_bitmap_alloc_blocks(23, 200);
+
 
 	memset(&VIDEO[3], 0xFF, 1024);
 

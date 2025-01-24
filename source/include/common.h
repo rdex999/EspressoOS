@@ -25,3 +25,5 @@ extern char _kernel_end;
 // Then, remove remove the mask from the address so it will be aligned upwards.
 #define ALIGN(address, align) (((address) + ((align) - 1)) & ~((align) - 1))
 #define KERNEL_END ((void*)&_kernel_end)
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
