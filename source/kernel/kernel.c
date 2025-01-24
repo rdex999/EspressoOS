@@ -45,9 +45,13 @@ void kernel_main(multiboot_info_t* mbd)
 
 	pmm_bitmap_alloc_blocks(0, 5);
 	pmm_bitmap_alloc_blocks(7, 11);
-
 	pmm_bitmap_alloc_blocks(23, 200);
+	pmm_bitmap_alloc_blocks(200+23+5, 7);
 
+	pmm_bitmap_free_blocks(0, 5);
+	pmm_bitmap_free_blocks(7, 11);
+	pmm_bitmap_free_blocks(200+23+5, 7);
+	pmm_bitmap_free_blocks(23, 200);
 
 	memset(&VIDEO[3], 0xFF, 1024);
 
