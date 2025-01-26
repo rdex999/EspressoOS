@@ -33,6 +33,7 @@ typedef uint64_t* pmm_bitmap_t;
 #define PMM_BITMAP_BITS_IN_ENTRY (sizeof(PMM_BITMAP[0]) * 8)					/* The number of bits in a bitmap entry. */
 #define PMM_BITMAP_BYTES_IN_ENTRY (sizeof(PMM_BITMAP[0]))						/* The number of bytes in a bitmap entry. */
 #define PMM_BITMAP_SIZE (g_pmm_total_blocks / PMM_BITMAP_BITS_IN_ENTRY)			/* The size of the bitmap in bytes. */
+#define PMM_BITMAP_LENGTH (PMM_BITMAP_SIZE / PMM_BITMAP_BYTES_IN_ENTRY)			/* The length of the bitmap in entries. */
 
 /* Dont cancle me for using globals, there isnt realy a better way for doing this */
 extern size_t g_pmm_total_blocks;		/* The total amount of memory blocks in ram */
@@ -79,6 +80,18 @@ size_t pmm_bitmap_addr_to_block(uint64_t address);
 
 /* Converts a bitmap index (block) into its physical address */
 uint64_t pmm_bitmap_block_to_addr(size_t block);
+
+/* 
+ * Finds the first free block (bit) in the bitmap. Returns its bit index (block index). 
+ * Returns -1 if not found.
+ */
+size_t pmm_bitmap_find_free();
+
+/* 
+ * Finds the first free block (bit) in the bitmap starting from <start_block>. Returns its bit index (block index). 
+ * Returns -1 if not found.
+ */
+size_t pmm_bitmap_find_free(size_t start_block);
 
 /* Finds the first <count> free blocks in the bitmap. Returns their bit index (block index) */
 size_t pmm_bitmap_find_free_blocks(size_t count);
