@@ -32,17 +32,32 @@ typedef uint64_t* pmm_bitmap_t;
 #define PMM_BITMAP ((pmm_bitmap_t)PMM_BITMAP_ADDRESS)
 #define PMM_BITMAP_BITS_IN_ENTRY (sizeof(PMM_BITMAP[0]) * 8)					/* The number of bits in a bitmap entry. */
 #define PMM_BITMAP_BYTES_IN_ENTRY (sizeof(PMM_BITMAP[0]))						/* The number of bytes in a bitmap entry. */
-#define PMM_BITMAP_SIZE (pmm_total_blocks / PMM_BITMAP_BITS_IN_ENTRY)			/* The size of the bitmap in bytes. */
+#define PMM_BITMAP_SIZE (g_pmm_total_blocks / PMM_BITMAP_BITS_IN_ENTRY)			/* The size of the bitmap in bytes. */
 
 /* Dont cancle me for using globals, there isnt realy a better way for doing this */
-extern size_t pmm_total_blocks;
-extern size_t pmm_free_blocks;
-extern size_t pmm_used_blocks;
+extern size_t g_pmm_total_blocks;		/* The total amount of memory blocks in ram */
+extern size_t g_pmm_free_blocks;		/* The amount of blocks that are currently free */
+extern size_t g_pmm_used_blocks;		/* The amount of blocks that are currently used */
 
 /* NOTE: usualy, "block" referse to a bit in the bitmap */
 
 /* Initializes the physical memory manager */
 void pmm_init(multiboot_tag_mmap_t* mmap);
+
+/* Allocates a single block of memory, returns its physical address. */
+uint64_t pmm_alloc();
+
+/* Allocates <count> blocks of memory, returns the physical address of the first block. */
+uint64_t pmm_alloc_blocks(size_t count);
+
+/* Frees a single block of memory */
+void pmm_free(uint64_t address);
+
+/* Frees <count> blocks of memory */
+void pmm_free_blocks(uint64_t address, size_t count);
+
+/* Allocates <count> blocks of memory starting from <start>. <start> Must be <PMM_BLOCK_SIZE> aligned */
+void pmm_alloc_address(uint64_t start, size_t count);
 
 /* Marks a memory block as used in the bitmap */
 void pmm_bitmap_alloc(size_t block);
@@ -64,3 +79,6 @@ size_t pmm_bitmap_addr_to_block(uint64_t address);
 
 /* Converts a bitmap index (block) into its physical address */
 uint64_t pmm_bitmap_block_to_addr(size_t block);
+
+/* Finds the first <count> free blocks in the bitmap. Returns their bit index (block index) */
+size_t pmm_bitmap_find_free_blocks(size_t count);
