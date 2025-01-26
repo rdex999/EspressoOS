@@ -27,6 +27,33 @@ void pmm_init(multiboot_tag_mmap_t*)
 	memset(PMM_BITMAP, 0, 1024);
 }
 
+uint64_t pmm_alloc()
+{
+	size_t block = pmm_bitmap_find_free();
+	if(block == -1)
+		return -1;
+
+	pmm_bitmap_alloc(block);
+	return pmm_bitmap_block_to_addr(block);
+}
+
+void pmm_free(uint64_t address)
+{
+	pmm_free_blocks(address, 1);
+}
+
+void pmm_free_blocks(uint64_t address, size_t count)
+{
+	size_t block = pmm_bitmap_addr_to_block(address);
+	pmm_bitmap_free_blocks(block, count);
+}
+
+void pmm_alloc_address(uint64_t address, size_t count)
+{
+	size_t block = pmm_bitmap_addr_to_block(address);
+	pmm_bitmap_alloc_blocks(block, count);
+}
+
 /* In both of these functions, for some reason, i need to explicitly say the "1" is an unsigned 64 bit integer (llu) */
 void pmm_bitmap_alloc(size_t block)
 {

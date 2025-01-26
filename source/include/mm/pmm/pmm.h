@@ -45,20 +45,17 @@ extern size_t g_pmm_used_blocks;		/* The amount of blocks that are currently use
 /* Initializes the physical memory manager */
 void pmm_init(multiboot_tag_mmap_t* mmap);
 
-/* Allocates a single block of memory, returns its physical address. */
+/* Allocates a single block of memory, returns its physical address. Returns -1 on failure. */
 uint64_t pmm_alloc();
 
-/* Allocates <count> blocks of memory, returns the physical address of the first block. */
-uint64_t pmm_alloc_blocks(size_t count);
-
-/* Frees a single block of memory */
+/* Frees a single block of memory. <address> Must be <PMM_BLOCK_SIZE> aligned. */
 void pmm_free(uint64_t address);
 
-/* Frees <count> blocks of memory */
+/* Frees <count> blocks of memory. <address> Must be <PMM_BLOCK_SIZE> aligned. */
 void pmm_free_blocks(uint64_t address, size_t count);
 
-/* Allocates <count> blocks of memory starting from <start>. <start> Must be <PMM_BLOCK_SIZE> aligned */
-void pmm_alloc_address(uint64_t start, size_t count);
+/* Marks <count> blocks of memory at <address> as allocated. <address> Must be <PMM_BLOCK_SIZE> aligned. */
+void pmm_alloc_address(uint64_t address, size_t count);
 
 /* Marks a memory block as used in the bitmap */
 void pmm_bitmap_alloc(size_t block);
@@ -92,6 +89,3 @@ size_t pmm_bitmap_find_free();
  * Returns -1 if not found.
  */
 size_t pmm_bitmap_find_free(size_t start_block);
-
-/* Finds the first <count> free blocks in the bitmap. Returns their bit index (block index) */
-size_t pmm_bitmap_find_free_blocks(size_t count);

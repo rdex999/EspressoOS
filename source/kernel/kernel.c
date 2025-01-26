@@ -37,38 +37,17 @@ void kernel_main(multiboot_info_t* mbd)
 
 	pmm_init(tag);
 
-	pmm_bitmap_alloc(0);
-	pmm_bitmap_alloc(31);
+	int a1 = pmm_alloc();
+	int a2 = pmm_alloc();
+	int a3 = pmm_alloc();
+	int a4 = pmm_alloc();
 
-	pmm_bitmap_free(0);
-	pmm_bitmap_free(31);
+	pmm_free(a2);
 
-	// pmm_bitmap_alloc_blocks(0, 5);
-	// pmm_bitmap_alloc_blocks(7, 11);
-	// pmm_bitmap_alloc_blocks(23, 200);
-	// pmm_bitmap_alloc_blocks(200+23+5, 7);
+	int a5 = pmm_alloc();
 
-	pmm_bitmap_alloc_blocks(0, 200);
-
-	bool free0 = pmm_bitmap_is_free(0);
-	bool free4 = pmm_bitmap_is_free(1);
-	bool free228 = pmm_bitmap_is_free(200 + 23 + 5);
-
-	int index = pmm_bitmap_find_free();
-
-	// pmm_bitmap_free_blocks(0, 5);
-	// pmm_bitmap_free_blocks(7, 11);
-	// pmm_bitmap_free_blocks(200+23+5, 7);
-	// pmm_bitmap_free_blocks(23, 200);
-
-	pmm_bitmap_free_blocks(0, 200);
-
-	free0 = pmm_bitmap_is_free(0);
-	free4 = pmm_bitmap_is_free(1);
-	free228 = pmm_bitmap_is_free(200 + 23 + 5);
-
-	uint64_t addr = pmm_bitmap_block_to_addr(200 + 23 + 5);
-	size_t block = pmm_bitmap_addr_to_block(addr);
+	pmm_alloc_address(0x4000, 10);	
+	pmm_free_blocks(0x4000, 10);
 
 	memset(&VIDEO[3], 0xFF, 1024);
 
