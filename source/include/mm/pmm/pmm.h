@@ -66,6 +66,9 @@ void pmm_bitmap_free(size_t block);
 /* Check if a memory block is free */
 bool pmm_bitmap_is_free(size_t block);
 
+/* Check if all <count> blocks are free starting from <start_block>. */
+bool pmm_bitmap_is_free_blocks(size_t start_block, size_t count);
+
 /* Mark <count> blocks as used in the bitmap */
 void pmm_bitmap_alloc_blocks(size_t start_block, size_t count);
 

@@ -57,17 +57,89 @@ void pmm_alloc_address(uint64_t address, size_t count)
 /* In both of these functions, for some reason, i need to explicitly say the "1" is an unsigned 64 bit integer (llu) */
 void pmm_bitmap_alloc(size_t block)
 {
-	PMM_BITMAP[block / PMM_BITMAP_BITS_IN_ENTRY] |= 1llu << (block % PMM_BITMAP_BITS_IN_ENTRY);
+	if(pmm_bitmap_is_free(block) && block < g_pmm_total_blocks)
+	{
+		PMM_BITMAP[block / PMM_BITMAP_BITS_IN_ENTRY] |= 1llu << (block % PMM_BITMAP_BITS_IN_ENTRY);
+		--g_pmm_free_blocks;
+		++g_pmm_used_blocks;
+	}
 }
 
 void pmm_bitmap_free(size_t block)
 {
-	PMM_BITMAP[block / PMM_BITMAP_BITS_IN_ENTRY] &= ~(1llu << (block % PMM_BITMAP_BITS_IN_ENTRY));
+	if(!pmm_bitmap_is_free(block) && block < g_pmm_total_blocks)
+	{
+		PMM_BITMAP[block / PMM_BITMAP_BITS_IN_ENTRY] &= ~(1llu << (block % PMM_BITMAP_BITS_IN_ENTRY));
+		++g_pmm_free_blocks;
+		--g_pmm_used_blocks;
+	}
 }
 
 bool pmm_bitmap_is_free(size_t block)
 {
 	return (PMM_BITMAP[block / PMM_BITMAP_BITS_IN_ENTRY] & (1llu << (block % PMM_BITMAP_BITS_IN_ENTRY))) == 0;
+}
+
+bool pmm_bitmap_is_free_blocks(size_t start_block, size_t count)
+{
+	/* 
+	 * This function has 4 steps (very similar to pmm_bitmap_alloc_blocks)
+	 * 	- 1 => Check if <start_block> and <count> both start and end at an entry index, if so, use full entry checks (uint64_t).
+	 *	- 2 => Check the bits in the first entry, so <start_block> will be aligned to a bitmap entry. 
+	 * 		   (If count is greater than the amount of bits left in the entry, check the bits left in the entry)
+	 *	- 3 => Check if we can use full entry checks to check full bitmap entries.
+	 *	- 4 => Check the unaligned bits in the last entry, as they were not checked in the full entry loops.
+	 */
+
+	if(start_block + count > g_pmm_total_blocks)
+		return false;
+
+	size_t entry_index = start_block / PMM_BITMAP_BITS_IN_ENTRY;	/* The entry index for <start_block> in the bitmap */
+	int bit_index = start_block % PMM_BITMAP_BITS_IN_ENTRY;			/* The bit offset in <entry_index> for the first bit to check */
+	
+	size_t full_entries = count / PMM_BITMAP_BITS_IN_ENTRY;			/* The amount of full entries we can check using full entry checks. */
+	if(bit_index == 0 && full_entries > 0)
+	{
+		for(size_t i = 0; i < full_entries; ++i)
+			if(PMM_BITMAP[entry_index + i] != 0)
+				return false;
+		
+		entry_index += full_entries;
+		count -= full_entries * PMM_BITMAP_BITS_IN_ENTRY;
+		start_block += full_entries * PMM_BITMAP_BITS_IN_ENTRY;
+	} else
+	{
+		size_t first_entry_blocks = MIN(PMM_BITMAP_BITS_IN_ENTRY - bit_index, count);
+		if((PMM_BITMAP[entry_index] & (((1llu << first_entry_blocks) - 1) << bit_index)) != 0)
+			return false;
+
+		++entry_index;
+		count -= first_entry_blocks;
+		start_block += first_entry_blocks;
+	}
+
+	/* 
+	 * Here, we know the <start_block> will be aligned to an entry in the bitmap. 
+	 * Also, if count is zero, the rest of the code wont have any effect.
+	 */
+
+	full_entries = count / PMM_BITMAP_BITS_IN_ENTRY;
+	if(full_entries > 0)
+	{
+		for(size_t i = 0; i < full_entries; ++i)
+			if(PMM_BITMAP[entry_index + i] != 0)
+				return false;
+		
+		entry_index += full_entries;
+		count -= full_entries * PMM_BITMAP_BITS_IN_ENTRY;
+		start_block += full_entries * PMM_BITMAP_BITS_IN_ENTRY;
+	}
+
+	if(count > 0)
+		if((PMM_BITMAP[entry_index] & ((1llu << count) - 1)) != 0)
+			return false;
+	
+	return true;
 }
 
 void pmm_bitmap_alloc_blocks(size_t start_block, size_t count)
