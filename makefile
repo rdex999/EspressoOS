@@ -24,7 +24,7 @@ export CFLAGS+=-m64 -c -ffreestanding -Wall -Wextra \
 	-fno-stack-protector -fno-exceptions -fno-rtti 	\
 	-I $(SRC)/include -I libk/include
 export ASFLAGS+=-f elf64 -I $(SRC)
-QEMU_FLAGS=-m 8192M -vga vmware -L /usr/share/OVMF/ -pflash /usr/share/OVMF/x64/OVMF_CODE.4m.fd
+QEMU_FLAGS=-m 8G -vga vmware -L /usr/share/OVMF/ -pflash /usr/share/OVMF/x64/OVMF_CODE.4m.fd
 ISO=dist/EspressoOS.iso
 DISK_IMG=dist/EspressoOS.img
 DISK_IMG_SIZE=$$((1 * 1024**3))

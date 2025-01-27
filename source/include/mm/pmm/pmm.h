@@ -48,13 +48,13 @@ void pmm_init(multiboot_tag_mmap_t* mmap);
 /* Allocates a single block of memory, returns its physical address. Returns -1 on failure. */
 uint64_t pmm_alloc();
 
-/* Frees a single block of memory. <address> Must be <PMM_BLOCK_SIZE> aligned. */
+/* Frees a single block of memory. <address> will be aligned down to <PMM_BLOCK_SIZE>. */
 void pmm_free(uint64_t address);
 
-/* Frees <count> blocks of memory. <address> Must be <PMM_BLOCK_SIZE> aligned. */
+/* Frees <count> blocks of memory. <address> will be aligned down to <PMM_BLOCK_SIZE>.*/
 void pmm_free_blocks(uint64_t address, size_t count);
 
-/* Marks <count> blocks of memory at <address> as allocated. <address> Must be <PMM_BLOCK_SIZE> aligned. */
+/* Marks <count> blocks of memory at <address> as allocated. <address> will be aligned down to <PMM_BLOCK_SIZE>. */
 void pmm_alloc_address(uint64_t address, size_t count);
 
 /* Marks a memory block as used in the bitmap */

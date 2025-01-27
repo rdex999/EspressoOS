@@ -37,12 +37,6 @@ void kernel_main(multiboot_info_t* mbd)
 
 	pmm_init(tag);
 
-	pmm_alloc_address(0x4000, 200);
-
-	bool res = pmm_bitmap_is_free_blocks(pmm_bitmap_addr_to_block(0x4000), 200);
-
-	pmm_free_blocks(0x4000, 200);
-
 	memset(&VIDEO[3], 0xFF, 1024);
 
 	while(1)
