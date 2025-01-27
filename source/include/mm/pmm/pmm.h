@@ -32,7 +32,7 @@ typedef uint64_t* pmm_bitmap_t;
 #define PMM_BITMAP ((pmm_bitmap_t)PMM_BITMAP_ADDRESS)
 #define PMM_BITMAP_BITS_IN_ENTRY (sizeof(PMM_BITMAP[0]) * 8)					/* The number of bits in a bitmap entry. */
 #define PMM_BITMAP_BYTES_IN_ENTRY (sizeof(PMM_BITMAP[0]))						/* The number of bytes in a bitmap entry. */
-#define PMM_BITMAP_SIZE (g_pmm_total_blocks / PMM_BITMAP_BITS_IN_ENTRY)			/* The size of the bitmap in bytes. */
+#define PMM_BITMAP_SIZE (g_pmm_total_blocks / 8)								/* The size of the bitmap in bytes. */
 #define PMM_BITMAP_LENGTH (PMM_BITMAP_SIZE / PMM_BITMAP_BYTES_IN_ENTRY)			/* The length of the bitmap in entries. */
 
 /* Dont cancle me for using globals, there isnt realy a better way for doing this */

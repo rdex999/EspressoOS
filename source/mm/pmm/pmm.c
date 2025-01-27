@@ -24,24 +24,36 @@ size_t g_pmm_used_blocks 	= -1;
 
 void pmm_init(multiboot_tag_mmap_t* mmap)
 {
-	size_t total_ram = 0;
+	/* 
+	 * In the provided memory map, not all addresses are actual ram. About 11GiB will be reserved for devices (graphics card, etc).
+	 * So, the memory the bitmap will look after will be 
+	 * from 0, to the highest available memory address, plus 1. (Amount of bytes)
+	 * <highest_available_memory> Will represent the highest address of available memory plus one.
+	 * <total_available_ram> Will represent the total amount of available ram in bytes.
+	 */
+
 	size_t total_available_ram = 0;
+	uint64_t highest_available_memory = 0;
 	for(size_t i = 0; i < mmap->entries_length(); ++i)
 	{
 		multiboot_mmap_entry_t* entry = mmap->index(i);
-		total_ram += entry->len;
 
 		if(entry->type == MULTIBOOT_MEMORY_AVAILABLE)
+		{
 			total_available_ram += entry->len;
+
+			if (entry->addr + entry->len > highest_available_memory)
+				highest_available_memory = entry->addr + entry->len;
+		}
 	}
-	g_pmm_total_blocks = total_ram / PMM_BLOCK_SIZE;
+	g_pmm_total_blocks = highest_available_memory / PMM_BLOCK_SIZE;
 	g_pmm_free_blocks = total_available_ram / PMM_BLOCK_SIZE;
 	g_pmm_used_blocks = 0;
 
 	/* Initialize the bitmap to all zeros */
 	memset(PMM_BITMAP, 0, PMM_BITMAP_SIZE);
 
-	/* Mark kernel memory as used */
+	/* Mark kernel (including the bitmap) memory as used. */
 	pmm_alloc_address(0, DIV_ROUND_UP((size_t)KERNEL_END + PMM_BITMAP_SIZE, PMM_BLOCK_SIZE));
 
 	/* Mark unavailable blocks as used */
