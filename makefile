@@ -15,27 +15,27 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 #
 
-SRC=source
-BLD=build
-CC=g++
-AS=nasm
-LD=ld
-export CFLAGS+=-m64 -c -ffreestanding -Wall -Wextra \
-	-fno-stack-protector -fno-exceptions -fno-rtti 	\
-	-I $(SRC)/include -I libk/include
-export ASFLAGS+=-f elf64 -I $(SRC)
+include config/build.mk
+QEMU=qemu-system-x86_64
 QEMU_FLAGS=-m 8G -vga vmware -L /usr/share/OVMF/ -pflash /usr/share/OVMF/x64/OVMF_CODE.4m.fd
 ISO=dist/EspressoOS.iso
 DISK_IMG=dist/EspressoOS.img
 DISK_IMG_SIZE=$$((1 * 1024**3))
 DEBUG_BREAKPOINT=kernel_main
 
+KERNEL_C_SUBDIRS=$(filter-out $(SRC)/include/, $(wildcard $(SRC)/*/))		# All C source subdirectories
+KERNEL_C_SOURCES=$(patsubst $(SRC)/%, %, $(shell find $(SRC)/ -name *.c)) 	# All C files, without the source/ prefix
+KERNEL_OBJECTS=$(patsubst %.c, $(BLD)/%.obj, $(KERNEL_C_SOURCES))			# All object files, with the build/ prefix
+
 .DEFAULT_GOAL=iso
 
-.PHONY: all image iso clean rundisk runiso debugimage debugiso
+.PHONY: all image iso clean rundisk runiso debugimage debugiso $(KERNEL_C_SUBDIRS)
 
 all:
-	mkdir -p $(BLD)/libk
+	@echo -e $(KERNEL_C_SUBDIRS)	
+	@echo -e $(KERNEL_C_SOURCES)
+	@echo -e $(KERNEL_OBJECTS)
+	@mkdir -p $(BLD)/libk
 
 # This rule requires root privileges for mounting and formating disk image partitions
 image: all $(DISK_IMG)
@@ -98,23 +98,15 @@ $(ISO): $(BLD)/kernel.bin
 	@# Create the ISO image.
 	grub-mkrescue -o $@ iso_disk 
 
-$(BLD)/kernel.bin: $(BLD)/kernel.obj $(BLD)/boot.obj $(BLD)/multiboot.obj $(BLD)/libk/libk.lib $(BLD)/pmm.obj
+$(BLD)/kernel.bin: $(KERNEL_OBJECTS)
 	$(LD) -T config/linker.ld -o $@ $^
+
+$(KERNEL_OBJECTS): $(KERNEL_C_SUBDIRS)
+$(KERNEL_C_SUBDIRS):
+	@$(MAKE) --no-print-directory -C $@ BLD=$(shell pwd)/$(BLD)/$(shell basename $@)
 
 $(BLD)/%.obj: $(SRC)/%.c $(SRC)/include/%.h
 	$(CC) $(CFLAGS) -o $@ $<
-
-$(BLD)/boot.obj: $(SRC)/x86/boot/boot.asm
-	$(AS) $(ASFLAGS) -o $@ $<
-
-$(BLD)/kernel.obj: $(SRC)/kernel/kernel.c $(SRC)/include/kernel/kernel.h
-	$(CC) $(CFLAGS) -o $@ $<
-
-$(BLD)/pmm.obj: $(SRC)/mm/pmm/pmm.c $(SRC)/include/mm/pmm/pmm.h
-	$(CC) $(CFLAGS) -o $@ $<
-
-$(BLD)/libk/libk.lib: $(BLD)/libk/string.obj
-	ld -r -o $@ $^
 
 $(BLD)/libk/string.obj: libk/source/string.c libk/include/string.h
 	$(CC) $(CFLAGS) -o $@ $<
@@ -123,15 +115,15 @@ clean:
 	rm -rf $(BLD)/* dist/* iso_disk
 
 runimage: image
-	qemu-system-x86_64 $(QEMU_FLAGS) -drive file=$(DISK_IMG)
+	$(QEMU) $(QEMU_FLAGS) -drive file=$(DISK_IMG)
 
 runiso: iso
-	qemu-system-x86_64 $(QEMU_FLAGS) -cdrom $(ISO)
+	$(QEMU) $(QEMU_FLAGS) -cdrom $(ISO)
 
 debugimage:
 	$(MAKE) clean
 	$(MAKE) image CFLAGS+=-g ASFLAGS+=-g
-	qemu-system-x86_64 $(QEMU_FLAGS) -drive file=$(DISK_IMG) -S -s &
+	$(QEMU) $(QEMU_FLAGS) -drive file=$(DISK_IMG) -S -s &
 	gdb $(BLD)/kernel.bin 								\
         -ex "target remote localhost:1234" 				\
         -ex "set disassembly-flavor intel" 				\
@@ -141,7 +133,7 @@ debugimage:
 debugiso:
 	$(MAKE) clean
 	$(MAKE) iso CFLAGS+=-g ASFLAGS+=-g
-	qemu-system-x86_64 $(QEMU_FLAGS) -cdrom $(ISO) -S -s &
+	$(QEMU) $(QEMU_FLAGS) -cdrom $(ISO) -S -s &
 	gdb $(BLD)/kernel.bin 								\
 		-ex "target remote localhost:1234" 				\
 		-ex "set disassembly-flavor intel" 				\
