@@ -15,12 +15,12 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 #
 
-export SRC=source
-export BLD=build
+export SRC=$(shell pwd)/source
+export BLD=$(shell pwd)/build
 export CC=g++
 export AS=nasm
 export LD=ld
 export CFLAGS+=-m64 -c -ffreestanding -Wall -Wextra \
 	-fno-stack-protector -fno-exceptions -fno-rtti 	\
-	-I $(SRC)/include -I libk/include
+	-I $(SRC)/include -I $(shell pwd)/libk/include
 export ASFLAGS+=-f elf64 -I $(SRC)

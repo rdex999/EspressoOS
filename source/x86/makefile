@@ -15,6 +15,7 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 #
 
-all:
-	@pwd
-	@echo -e $(BLD)
+$(BLD)/boot/boot.obj: $(SRC)/boot/boot.asm $(SRC)/boot/*.inc
+	@echo -e "Compiling $< into $@..."
+	@mkdir -p $(dir $@)
+	@$(AS) $(ASFLAGS) -o $@ $<

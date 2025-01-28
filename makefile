@@ -23,18 +23,28 @@ DISK_IMG=dist/EspressoOS.img
 DISK_IMG_SIZE=$$((1 * 1024**3))
 DEBUG_BREAKPOINT=kernel_main
 
-KERNEL_C_SUBDIRS=$(filter-out $(SRC)/include/, $(wildcard $(SRC)/*/))		# All C source subdirectories
-KERNEL_C_SOURCES=$(patsubst $(SRC)/%, %, $(shell find $(SRC)/ -name *.c)) 	# All C files, without the source/ prefix
-KERNEL_OBJECTS=$(patsubst %.c, $(BLD)/%.obj, $(KERNEL_C_SOURCES))			# All object files, with the build/ prefix
+KERNEL_C_SUBDIRS=$(filter-out $(SRC)/include/, $(wildcard $(SRC)/*/))			# All C source subdirectories
+KERNEL_C_SOURCES=$(patsubst $(SRC)/%, %, $(shell find $(SRC)/ -name *.c)) 		# All C files, without the source/ prefix
+KERNEL_ASM_SOURCES=$(patsubst $(SRC)/%, %, $(shell find $(SRC)/ -name *.asm)) 	# All ASM files, without the source/ prefix
+
+KERNEL_OBJECTS=$(patsubst %.c, $(BLD)/%.obj, $(KERNEL_C_SOURCES))				# All object files, with the build/ prefix
+KERNEL_OBJECTS+=$(patsubst %.asm, $(BLD)/%.obj, $(KERNEL_ASM_SOURCES))
+KERNEL_OBJECTS+=$(BLD)/libk/string.obj
+
+KERNEL_SINGLE_C_SOURCES=$(wildcard $(SRC)/*.c)
+KERNEL_SINGLE_OBJECTS=$(patsubst $(SRC)/%.c,$(BLD)/%.obj,$(KERNEL_SINGLE_C_SOURCES))
 
 .DEFAULT_GOAL=iso
 
 .PHONY: all image iso clean rundisk runiso debugimage debugiso $(KERNEL_C_SUBDIRS)
 
 all:
-	@echo -e $(KERNEL_C_SUBDIRS)	
-	@echo -e $(KERNEL_C_SOURCES)
-	@echo -e $(KERNEL_OBJECTS)
+	@# @echo -e "ALL: $(KERNEL_C_SUBDIRS)"
+	@# @echo -e "ALL: $(KERNEL_C_SOURCES)"
+	@# @echo -e "ALL: $(KERNEL_OBJECTS)"
+	@# @echo -e "ALL: SB: $(KERNEL_SINGLE_OBJECTS)"
+	@# @echo -e "ALL: SCS: $(KERNEL_SINGLE_C_SOURCES)"
+
 	@mkdir -p $(BLD)/libk
 
 # This rule requires root privileges for mounting and formating disk image partitions
@@ -99,17 +109,21 @@ $(ISO): $(BLD)/kernel.bin
 	grub-mkrescue -o $@ iso_disk 
 
 $(BLD)/kernel.bin: $(KERNEL_OBJECTS)
-	$(LD) -T config/linker.ld -o $@ $^
+	@echo -e "Linking all objects into $@..."
+	@$(LD) -T config/linker.ld -o $@ $^
 
 $(KERNEL_OBJECTS): $(KERNEL_C_SUBDIRS)
 $(KERNEL_C_SUBDIRS):
-	@$(MAKE) --no-print-directory -C $@ BLD=$(shell pwd)/$(BLD)/$(shell basename $@)
+	@scripts/build_dir.sh $@
 
-$(BLD)/%.obj: $(SRC)/%.c $(SRC)/include/%.h
-	$(CC) $(CFLAGS) -o $@ $<
+FILE=$(patsubst $(BLD)/%.obj,$(SRC)/%.c,$@)
+$(KERNEL_SINGLE_OBJECTS): $(FILE) $(patsubst $(SRC)/%.c,$(SRC)/include/%.h,$(FILE))
+	@echo -e "Compiling $(FILE) into $@..."
+	@$(CC) $(CFLAGS) -o $@ $(FILE)
 
 $(BLD)/libk/string.obj: libk/source/string.c libk/include/string.h
-	$(CC) $(CFLAGS) -o $@ $<
+	@echo -e "Compiling $< into $@..."
+	@$(CC) $(CFLAGS) -o $@ $<
 
 clean:
 	rm -rf $(BLD)/* dist/* iso_disk
