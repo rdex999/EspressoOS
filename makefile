@@ -30,14 +30,23 @@ KERNEL_ASM_SOURCES=$(shell find $(SRC) -name *.asm)
 
 KERNEL_C_OBJECTS=$(patsubst $(SRC)/%.c,$(BLD)/%.obj,$(KERNEL_C_SOURCES))
 KERNEL_ASM_OBJECTS=$(patsubst $(SRC)/%.asm,$(BLD)/%.obj,$(KERNEL_ASM_SOURCES))
-KERNEL_OBJECTS=$(KERNEL_C_OBJECTS) $(KERNEL_ASM_OBJECTS) $(BLD)/libk/string.obj
+
+LIBK_C_SOURCES=$(shell find libk/source -name *.c)
+LIBK_C_HEADERS=$(shell find libk/include -name *.h)
+LIBK_ASM_SOURCES=$(shell find libk/source -name *.asm)
+
+LIBK_C_OBJECTS=$(patsubst libk/source/%.c,$(BLD)/libk/%.obj,$(LIBK_C_SOURCES))
+LIBK_ASM_OBJECTS=$(patsubst libk/source/%.asm,$(BLD)/libk/%.obj,$(LIBK_ASM_SOURCES))
+LIBK_OBJECTS=$(LIBK_C_OBJECTS) $(LIBK_ASM_OBJECTS)
+
+KERNEL_OBJECTS=$(KERNEL_C_OBJECTS) $(KERNEL_ASM_OBJECTS) $(LIBK_OBJECTS)
 
 .DEFAULT_GOAL=iso
 
 .PHONY: all image iso clean rundisk runiso debugimage debugiso
 
 all:
-	@mkdir -p $(BLD)/libk
+	@# None
 
 # This rule requires root privileges for mounting and formating disk image partitions
 image: all $(DISK_IMG)
@@ -109,13 +118,14 @@ $(BLD)/%.obj: $(SRC)/%.c $(KERNEL_C_HEADERS)
 	@mkdir -p $(dir $@)
 	@$(CC) $(CFLAGS) -o $@ $<
 
-$(BLD)/x86/boot/boot.obj: $(SRC)/x86/boot/boot.asm $(SRC)/x86/boot/*.inc
+$(BLD)/%.obj: $(SRC)/%.asm $(shell find $(dir $<) -name *.inc)
 	@echo -e "Assembling $< into $@..."
 	@mkdir -p $(dir $@)
 	@$(AS) $(ASFLAGS) -o $@ $<
 
-$(BLD)/libk/string.obj: libk/source/string.c
-	@echo -e "HEY Compiling $< into $@..."
+$(BLD)/libk/%.obj: libk/source/%.c
+	@echo -e "Compiling $< into $@..."
+	@mkdir -p $(dir $@)
 	@$(CC) $(CFLAGS) -o $@ $<
 
 clean:
