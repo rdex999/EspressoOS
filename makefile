@@ -102,34 +102,35 @@ $(ISO): $(BLD)/kernel.bin
 
 	@# The config file should be located in the disk image at /boot/grub/grub.cfg,
 	@# and the kernel should be located at /boot/kernel.bin, so put it there.
-	mkdir -p iso_disk/boot/grub
-	cp config/grub/iso_grub.cfg iso_disk/boot/grub/grub.cfg
-	cp $(BLD)/kernel.bin iso_disk/boot
+	@mkdir -p iso_disk/boot/grub
+	@cp config/grub/iso_grub.cfg iso_disk/boot/grub/grub.cfg
+	@cp $(BLD)/kernel.bin iso_disk/boot
 
 	@# Create the ISO image.
-	grub-mkrescue -o $@ iso_disk 
+	@grub-mkrescue -o $@ iso_disk 1> /dev/null
 
 $(BLD)/kernel.bin: $(KERNEL_OBJECTS)
-	@echo -e "Linking all objects into $@..."
+	@echo -e "\
+	$(call text_attr,Linking,$(TEXT_BOLD),$(TEXT_CYAN)) \
+	all objects into \
+	$(call text_attr,$(patsubst $(BLD)/%,%,$@),$(TEXT_YELLOW))..."
+
 	@$(LD) -T config/linker.ld -o $@ $^
 
 $(BLD)/%.obj: $(SRC)/%.c $(KERNEL_C_HEADERS)
-	@echo -e "Compiling $< into $@..."
-	@mkdir -p $(dir $@)
+	$(call prep_compile,$@,$<)
 	@$(CC) $(CFLAGS) -o $@ $<
 
 $(BLD)/%.obj: $(SRC)/%.asm $(shell find $(dir $<) -name *.inc)
-	@echo -e "Assembling $< into $@..."
-	@mkdir -p $(dir $@)
+	$(call prep_compile,$@,$<)
 	@$(AS) $(ASFLAGS) -o $@ $<
 
 $(BLD)/libk/%.obj: libk/source/%.c
-	@echo -e "Compiling $< into $@..."
-	@mkdir -p $(dir $@)
+	$(call prep_compile,$@,$<)
 	@$(CC) $(CFLAGS) -o $@ $<
 
 clean:
-	rm -rf $(BLD)/* dist/* iso_disk
+	@rm -rf $(BLD)/* dist/* iso_disk
 
 runimage: image
 	$(QEMU) $(QEMU_FLAGS) -drive file=$(DISK_IMG)
