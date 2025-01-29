@@ -16,6 +16,7 @@
 #
 
 include config/build.mk
+
 QEMU=qemu-system-x86_64
 QEMU_FLAGS=-m 8G -vga vmware -L /usr/share/OVMF/ -pflash /usr/share/OVMF/x64/OVMF_CODE.4m.fd
 ISO=dist/EspressoOS.iso
@@ -23,28 +24,19 @@ DISK_IMG=dist/EspressoOS.img
 DISK_IMG_SIZE=$$((1 * 1024**3))
 DEBUG_BREAKPOINT=kernel_main
 
-KERNEL_C_SUBDIRS=$(filter-out $(SRC)/include/, $(wildcard $(SRC)/*/))			# All C source subdirectories
-KERNEL_C_SOURCES=$(patsubst $(SRC)/%, %, $(shell find $(SRC)/ -name *.c)) 		# All C files, without the source/ prefix
-KERNEL_ASM_SOURCES=$(patsubst $(SRC)/%, %, $(shell find $(SRC)/ -name *.asm)) 	# All ASM files, without the source/ prefix
+KERNEL_C_SOURCES=$(shell find $(SRC) -name *.c)
+KERNEL_C_HEADERS=$(shell find $(SRC)/include -name *.h)
+KERNEL_ASM_SOURCES=$(shell find $(SRC) -name *.asm)
 
-KERNEL_OBJECTS=$(patsubst %.c, $(BLD)/%.obj, $(KERNEL_C_SOURCES))				# All object files, with the build/ prefix
-KERNEL_OBJECTS+=$(patsubst %.asm, $(BLD)/%.obj, $(KERNEL_ASM_SOURCES))
-KERNEL_OBJECTS+=$(BLD)/libk/string.obj
-
-KERNEL_SINGLE_C_SOURCES=$(wildcard $(SRC)/*.c)
-KERNEL_SINGLE_OBJECTS=$(patsubst $(SRC)/%.c,$(BLD)/%.obj,$(KERNEL_SINGLE_C_SOURCES))
+KERNEL_C_OBJECTS=$(patsubst $(SRC)/%.c,$(BLD)/%.obj,$(KERNEL_C_SOURCES))
+KERNEL_ASM_OBJECTS=$(patsubst $(SRC)/%.asm,$(BLD)/%.obj,$(KERNEL_ASM_SOURCES))
+KERNEL_OBJECTS=$(KERNEL_C_OBJECTS) $(KERNEL_ASM_OBJECTS) $(BLD)/libk/string.obj
 
 .DEFAULT_GOAL=iso
 
-.PHONY: all image iso clean rundisk runiso debugimage debugiso $(KERNEL_C_SUBDIRS)
+.PHONY: all image iso clean rundisk runiso debugimage debugiso
 
 all:
-	@# @echo -e "ALL: $(KERNEL_C_SUBDIRS)"
-	@# @echo -e "ALL: $(KERNEL_C_SOURCES)"
-	@# @echo -e "ALL: $(KERNEL_OBJECTS)"
-	@# @echo -e "ALL: SB: $(KERNEL_SINGLE_OBJECTS)"
-	@# @echo -e "ALL: SCS: $(KERNEL_SINGLE_C_SOURCES)"
-
 	@mkdir -p $(BLD)/libk
 
 # This rule requires root privileges for mounting and formating disk image partitions
@@ -112,17 +104,18 @@ $(BLD)/kernel.bin: $(KERNEL_OBJECTS)
 	@echo -e "Linking all objects into $@..."
 	@$(LD) -T config/linker.ld -o $@ $^
 
-$(KERNEL_OBJECTS): $(KERNEL_C_SUBDIRS)
-$(KERNEL_C_SUBDIRS):
-	@scripts/build_dir.sh $@
-
-FILE=$(patsubst $(BLD)/%.obj,$(SRC)/%.c,$@)
-$(KERNEL_SINGLE_OBJECTS): $(FILE) $(patsubst $(SRC)/%.c,$(SRC)/include/%.h,$(FILE))
-	@echo -e "Compiling $(FILE) into $@..."
-	@$(CC) $(CFLAGS) -o $@ $(FILE)
-
-$(BLD)/libk/string.obj: libk/source/string.c libk/include/string.h
+$(BLD)/%.obj: $(SRC)/%.c $(KERNEL_C_HEADERS)
 	@echo -e "Compiling $< into $@..."
+	@mkdir -p $(dir $@)
+	@$(CC) $(CFLAGS) -o $@ $<
+
+$(BLD)/x86/boot/boot.obj: $(SRC)/x86/boot/boot.asm $(SRC)/x86/boot/*.inc
+	@echo -e "Assembling $< into $@..."
+	@mkdir -p $(dir $@)
+	@$(AS) $(ASFLAGS) -o $@ $<
+
+$(BLD)/libk/string.obj: libk/source/string.c
+	@echo -e "HEY Compiling $< into $@..."
 	@$(CC) $(CFLAGS) -o $@ $<
 
 clean:
