@@ -29,13 +29,11 @@
 void kernel_main(multiboot_info_t* mbd)
 {
 	multiboot_tag_mmap_t* mmap = (multiboot_tag_mmap_t*)mbd->find_tag(MULTIBOOT_TAG_TYPE_MMAP);
-	pmm_bitmap_t bitmap = PMM_BITMAP;
-
 	pmm_init(mmap);
 
-	uint64_t pdpe = *vmm_get_pdpe(10llu << 30llu);
-	vmm_set_pdpe(10llu << 30llu, 420);
-	pdpe = *vmm_get_pdpe(10llu << 30llu);
+	uint64_t pd = *vmm_get_pde(10llu << 21llu);
+	vmm_set_pde(10llu << 21llu, 420);
+	pd = *vmm_get_pde(10llu << 21llu);
 
 	while(1)
 	{

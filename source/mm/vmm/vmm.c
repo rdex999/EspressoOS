@@ -17,21 +17,43 @@
 
 #include "mm/vmm/vmm.h"
 
+uint64_t* vmm_get_pde(virt_addr_t address)
+{
+	uint64_t* pdpe = vmm_get_pdpe(address);
+	if(pdpe == NULL)
+		return NULL;
+	
+	uint64_t* pd = (uint64_t*)VMM_PDP_GET_PD(*pdpe);
+	if(pd == NULL)
+		return NULL;
+	
+	size_t pdpe_index = VMM_VADDR_PD_IDX(address);
+
+	return &pdpe[pdpe_index];
+}
+
+void vmm_set_pde(virt_addr_t address, uint64_t entry)
+{
+	uint64_t* pde = vmm_get_pde(address);
+	if(pde == NULL)
+		return;
+	
+	*pde = entry;
+}
+
 uint64_t* vmm_get_pdpe(virt_addr_t address)
 {
 	uint64_t* pml4e = vmm_get_pml4e(address);
 	if(pml4e == NULL)
 		return NULL;
 
-	uint64_t* pdpt = (uint64_t*)VMM_PML4E_GET_PDPT(*pml4e);
-	if(pdpt == NULL)
+	uint64_t* pdp = (uint64_t*)VMM_PML4E_GET_PDP(*pml4e);
+	if(pdp == NULL)
 		return NULL;
 
 	size_t pdpe_index = VMM_VADDR_PDPE_IDX(address);
-	if(pdpe_index >= VMM_PAGE_TABLE_LENGTH)
-		return NULL;
 
-	return &pdpt[pdpe_index];
+	return &pdp[pdpe_index];
 }
 
 void vmm_set_pdpe(virt_addr_t address, uint64_t entry)
@@ -46,18 +68,12 @@ void vmm_set_pdpe(virt_addr_t address, uint64_t entry)
 uint64_t* vmm_get_pml4e(virt_addr_t address)
 {
 	int pml4e_index = VMM_VADDR_PML4E_IDX(address);
-	if(pml4e_index >= VMM_PAGE_TABLE_LENGTH)
-		return NULL;
-
 	return &vmm_get_pml4()[pml4e_index];
 }
 
 void vmm_set_pml4e(virt_addr_t address, uint64_t entry)
 {
 	int pml4e_index = VMM_VADDR_PML4E_IDX(address);
-	if(pml4e_index >= VMM_PAGE_TABLE_LENGTH)
-		return;
-
 	vmm_get_pml4()[pml4e_index] = entry;
 }
 
