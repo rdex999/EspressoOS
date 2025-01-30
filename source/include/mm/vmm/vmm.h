@@ -29,71 +29,71 @@ typedef uint64_t virt_addr_t;
 /* Initialize the virtual memory manager */
 void vmm_init();
 
-/* Allocates a memory block of <VMM_PAGE_SIZE>. Returns null on failure. */
-uint64_t vmm_alloc_page();
+/* Allocates a memory block of <VMM_PAGE_SIZE>, returns its virtual address. Returns null on failure. */
+virt_addr_t vmm_alloc_page();
 
-/* Allocates <count> memory blocks of <VMM_PAGE_SIZE>. Returns null on failure. */
-uint64_t vmm_alloc_pages(size_t count);
+/* Allocates <count> memory blocks of <VMM_PAGE_SIZE>, returns their virtual address. Returns null on failure. */
+virt_addr_t vmm_alloc_pages(size_t count);
 
 /* Frees a memory block of <VMM_PAGE_SIZE>. */
-void vmm_free_page(uint64_t address);
+void vmm_free_page(virt_addr_t address);
 
 /* Frees <count> memory blocks of <VMM_PAGE_SIZE>. */
-void vmm_free_pages(uint64_t address);
+void vmm_free_pages(virt_addr_t address, size_t count);
 
 /*
  * Maps the given virtual address to a physical address, sets the given flags.
  * Uses the physical memory manager to find a free physical memory block, and allocates it. 
  */
-void vmm_map_page(uint64_t virtual_address, uint64_t flags);
+void vmm_map_page(virt_addr_t address, uint64_t flags);
 
 /*
  * Maps <count> pages of the given virtual address to a physical address, sets the given flags.
  * Uses the physical memory manager to find a free physical memory blocks, and allocates them. 
  */
-void vmm_map_pages(uint64_t virtual_address, uint64_t flags, size_t count);
+void vmm_map_pages(virt_addr_t address, uint64_t flags, size_t count);
 
 /* 
  * Map a virtual address to a physical address, set the given flags. 
  * Uses the physical memory manager to allocate the physical address
  */
-void vmm_map_virtual_to_physical(uint64_t virtual_address, uint64_t physical_address, uint64_t flags);
+void vmm_map_virtual_to_physical(virt_addr_t vaddr, phys_addr_t paddr, uint64_t flags);
 
 /* 
  * Unmaps a virtual address. 
  * Frees its corresponding physical address using the physical memory manager.
  */
-void vmm_unmap_page(uint64_t virtual_address);
+void vmm_unmap_page(virt_addr_t address);
 
 /* 
  * Unmaps <count> pages of the given virtual address.
  * Frees their corresponding physical address using the physical memory manager. 
  */
-void vmm_unmap_pages(uint64_t virtual_address, size_t count);
+void vmm_unmap_pages(virt_addr_t address, size_t count);
 
 /* Returns a pointer to the page table entry of a given virtual address. Will return null on failure. */
-uint64_t* vmm_get_pte(uint64_t virtual_address);
+uint64_t* vmm_get_pte(virt_addr_t address);
 
 /* Sets the page table entry of a given virtual address. */
-void vmm_set_pte(uint64_t virtual_address, uint64_t entry);
+void vmm_set_pte(virt_addr_t address, uint64_t entry);
 
 /* Returns a pointer to the page directory entry of a given virtual address. Will return null on failure. */
-uint64_t* vmm_get_pde(uint64_t virtual_address);
+uint64_t* vmm_get_pde(virt_addr_t address);
 
 /* Sets the page directory entry of a given virtual address. */
-void vmm_set_pde(uint64_t virtual_address, uint64_t entry);
+void vmm_set_pde(virt_addr_t address, uint64_t entry);
 
 /* Returns a pointer to the page directory pointer table entry of a given virtual address. Will return null on failure. */
-uint64_t* vmm_get_pdpe(uint64_t virtual_address);
+uint64_t* vmm_get_pdpe(virt_addr_t address);
 
 /* Sets the page directory pointer table entry of a given virtual address. */
-void vmm_set_pdpe(uint64_t virtual_address, uint64_t entry);
+void vmm_set_pdpe(virt_addr_t address, uint64_t entry);
 
 /* Returns a pointer to the page map level 4 entry of a given virtual address. Will return null on failure. */
-uint64_t* vmm_get_pml4e(uint64_t virtual_address);
+uint64_t* vmm_get_pml4e(virt_addr_t address);
 
 /* Sets the page map level 4 entry of a given virtual address. */
-void vmm_set_pml4e(uint64_t virtual_address, uint64_t entry);
+void vmm_set_pml4e(virt_addr_t address, uint64_t entry);
 
 /* Returns the address of the page map level 4 paging structure. (The value of the CR3 register) */
 uint64_t* vmm_get_pml4();
