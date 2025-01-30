@@ -15,31 +15,25 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "kernel/kernel.h"
+#pragma once
 
-#include "string.h"
-#include "mm/pmm/pmm.h"
-#include "mm/vmm/vmm.h"
+#include <stdint.h>
 
-#include "cpu.h"
-
-#define VIDEO ((uint32_t*)0xA0000)
-
-#ifdef __cplusplus
-	extern "C"
-#endif
-void kernel_main(multiboot_info_t* mbd)
+inline uint64_t read_cr3()
 {
-	multiboot_tag_mmap_t* mmap = (multiboot_tag_mmap_t*)mbd->find_tag(MULTIBOOT_TAG_TYPE_MMAP);
-	pmm_bitmap_t bitmap = PMM_BITMAP;
+	uint64_t res;
+	asm volatile("mov %%cr3, %0"
+		: "=r"(res)
+		:
+	);
+	return res;
+}
 
-	pmm_init(mmap);
+inline void write_cr3(uint64_t value)
+{
+	asm volatile("mov %0, %%cr3"
+		:
+		: "r"(value)
+	);
 
-	uint64_t value = read_cr3();
-
-	while(1)
-	{
-		asm("cli");
-		asm("hlt");
-	}
-} 
+}
