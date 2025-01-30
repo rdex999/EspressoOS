@@ -33,6 +33,10 @@ void kernel_main(multiboot_info_t* mbd)
 
 	pmm_init(mmap);
 
+	uint64_t pdpe = *vmm_get_pdpe(10llu << 30llu);
+	vmm_set_pdpe(10llu << 30llu, 420);
+	pdpe = *vmm_get_pdpe(10llu << 30llu);
+
 	while(1)
 	{
 		asm("cli");

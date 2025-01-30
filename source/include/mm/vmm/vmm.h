@@ -24,7 +24,13 @@
 
 typedef uint64_t virt_addr_t;
 
-#define VMM_PAGE_SIZE PMM_BLOCK_SIZE
+#define VMM_PAGE_SIZE 					PMM_BLOCK_SIZE
+#define VMM_PAGE_TABLE_LENGTH 			512
+
+#define VMM_VADDR_PML4E_IDX(vaddr) 		(((vaddr) >> 39) & 0x1FF)
+#define VMM_VADDR_PDPE_IDX(vaddr) 		(((vaddr) >> 30) & 0x1FF)
+
+#define VMM_PML4E_GET_PDPT(pml4e) 		((pml4e) & 0x7FFFFFFFFF000)
 
 /* Initialize the virtual memory manager */
 void vmm_init();
