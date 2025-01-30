@@ -107,7 +107,7 @@ $(ISO): $(BLD)/kernel.bin
 	@cp $(BLD)/kernel.bin iso_disk/boot
 
 	@# Create the ISO image.
-	@grub-mkrescue -o $@ iso_disk 1> /dev/null
+	@grub-mkrescue -o $@ iso_disk 2>/dev/null
 
 $(BLD)/kernel.bin: $(KERNEL_OBJECTS)
 	@echo -e "\
@@ -125,7 +125,7 @@ $(BLD)/%.obj: $(SRC)/%.asm $(shell find $(dir $<) -name *.inc)
 	$(call prep_compile,$@,$<)
 	@$(AS) $(ASFLAGS) -o $@ $<
 
-$(BLD)/libk/%.obj: libk/source/%.c
+$(BLD)/libk/%.obj: libk/source/%.c $(LIBK_C_HEADERS)
 	$(call prep_compile,$@,$<)
 	@$(CC) $(CFLAGS) -o $@ $<
 

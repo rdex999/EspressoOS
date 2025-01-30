@@ -15,27 +15,4 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "kernel/kernel.h"
-
-#include "string.h"
-#include "mm/pmm/pmm.h"
 #include "mm/vmm/vmm.h"
-
-#define VIDEO ((uint32_t*)0xA0000)
-
-#ifdef __cplusplus
-	extern "C"
-#endif
-void kernel_main(multiboot_info_t* mbd)
-{
-	multiboot_tag_mmap_t* mmap = (multiboot_tag_mmap_t*)mbd->find_tag(MULTIBOOT_TAG_TYPE_MMAP);
-	pmm_bitmap_t bitmap = PMM_BITMAP;
-
-	pmm_init(mmap);
-
-	while(1)
-	{
-		asm("cli");
-		asm("hlt");
-	}
-} 

@@ -26,10 +26,11 @@
 typedef uint64_t* pmm_bitmap_t;
 
 #define PMM_BLOCK_SIZE 4096
-#define PMM_BITMAP_ADDRESS KERNEL_END
 
 /* Each bit specifies an available(0) or unavailable(1) memory block of PMM_BLOCK_SIZE bytes. */
 #define PMM_BITMAP ((pmm_bitmap_t)PMM_BITMAP_ADDRESS)
+#define PMM_BITMAP_ADDRESS KERNEL_END
+#define PMM_BITMAP_END_ADDRESS ((void*)((uint64_t)PMM_BITMAP_ADDRESS + PMM_BITMAP_SIZE))
 #define PMM_BITMAP_BITS_IN_ENTRY (sizeof(PMM_BITMAP[0]) * 8)					/* The number of bits in a bitmap entry. */
 #define PMM_BITMAP_BYTES_IN_ENTRY (sizeof(PMM_BITMAP[0]))						/* The number of bytes in a bitmap entry. */
 #define PMM_BITMAP_SIZE (g_pmm_total_blocks / 8)								/* The size of the bitmap in bytes. */
