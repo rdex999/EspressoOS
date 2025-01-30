@@ -33,7 +33,7 @@ void pmm_init(multiboot_tag_mmap_t* mmap)
 	 */
 
 	size_t total_available_ram = 0;
-	uint64_t highest_available_memory = 0;
+	phys_addr_t highest_available_memory = 0;
 	for(size_t i = 0; i < mmap->entries_length(); ++i)
 	{
 		multiboot_mmap_entry_t* entry = mmap->index(i);
@@ -62,7 +62,7 @@ void pmm_init(multiboot_tag_mmap_t* mmap)
 		multiboot_mmap_entry_t* entry = mmap->index(i);
 		if(entry->type != MULTIBOOT_MEMORY_AVAILABLE)
 		{
-			uint64_t aligned_addr = ALIGN(entry->addr, PMM_BLOCK_SIZE);
+			phys_addr_t aligned_addr = ALIGN(entry->addr, PMM_BLOCK_SIZE);
 			size_t real_length = entry->len + (entry->addr - aligned_addr);
 			size_t blocks = DIV_ROUND_UP(real_length, PMM_BLOCK_SIZE);
 			pmm_alloc_address(aligned_addr, blocks);
@@ -70,7 +70,7 @@ void pmm_init(multiboot_tag_mmap_t* mmap)
 	}
 }
 
-uint64_t pmm_alloc()
+phys_addr_t pmm_alloc()
 {
 	size_t block = pmm_bitmap_find_free();
 	if(block == -1llu)
@@ -80,22 +80,22 @@ uint64_t pmm_alloc()
 	return pmm_bitmap_block_to_addr(block);
 }
 
-void pmm_free(uint64_t address)
+void pmm_free(phys_addr_t address)
 {
-	size_t aligned_address = ALIGN(address, PMM_BLOCK_SIZE);
+	phys_addr_t aligned_address = ALIGN(address, PMM_BLOCK_SIZE);
 	pmm_free_blocks(aligned_address, 1);
 }
 
-void pmm_free_blocks(uint64_t address, size_t count)
+void pmm_free_blocks(phys_addr_t address, size_t count)
 {
-	size_t aligned_address = ALIGN(address, PMM_BLOCK_SIZE);
+	phys_addr_t aligned_address = ALIGN(address, PMM_BLOCK_SIZE);
 	size_t block = pmm_bitmap_addr_to_block(aligned_address);
 	pmm_bitmap_free_blocks(block, count);
 }
 
-void pmm_alloc_address(uint64_t address, size_t count)
+void pmm_alloc_address(phys_addr_t address, size_t count)
 {
-	size_t aligned_address = ALIGN(address, PMM_BLOCK_SIZE);
+	phys_addr_t aligned_address = ALIGN(address, PMM_BLOCK_SIZE);
 	size_t block = pmm_bitmap_addr_to_block(aligned_address);
 	pmm_bitmap_alloc_blocks(block, count);
 }
@@ -312,12 +312,12 @@ void pmm_bitmap_free_blocks(size_t start_block, size_t count)
 	g_pmm_used_blocks -= count;
 }
 
-size_t pmm_bitmap_addr_to_block(uint64_t address)
+size_t pmm_bitmap_addr_to_block(phys_addr_t address)
 {
 	return address / PMM_BLOCK_SIZE;
 }
 
-uint64_t pmm_bitmap_block_to_addr(size_t block)
+phys_addr_t pmm_bitmap_block_to_addr(size_t block)
 {
 	return block * PMM_BLOCK_SIZE;
 }

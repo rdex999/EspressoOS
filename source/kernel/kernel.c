@@ -21,8 +21,6 @@
 #include "mm/pmm/pmm.h"
 #include "mm/vmm/vmm.h"
 
-#include "cpu.h"
-
 #define VIDEO ((uint32_t*)0xA0000)
 
 #ifdef __cplusplus
@@ -34,8 +32,6 @@ void kernel_main(multiboot_info_t* mbd)
 	pmm_bitmap_t bitmap = PMM_BITMAP;
 
 	pmm_init(mmap);
-
-	uint64_t value = read_cr3();
 
 	while(1)
 	{

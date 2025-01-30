@@ -18,8 +18,11 @@
 #pragma once
 
 #include "mm/pmm/pmm.h"
+#include "cpu.h"
 #include <stdint.h>
 #include <stddef.h>
+
+typedef uint64_t virt_addr_t;
 
 #define VMM_PAGE_SIZE PMM_BLOCK_SIZE
 
@@ -95,5 +98,5 @@ void vmm_set_pml4e(uint64_t virtual_address, uint64_t entry);
 /* Returns the address of the page map level 4 paging structure. (The value of the CR3 register) */
 uint64_t* vmm_get_pml4();
 
-/* Sets the address of the page map level 4 paging structure. (The value of the CR3 register) */
+/* Sets a new page map level 4 table. (the value of the CR3 register) */
 void vmm_set_pml4(uint64_t* pml4);

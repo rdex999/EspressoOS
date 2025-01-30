@@ -24,6 +24,7 @@
 #include <stddef.h>
 
 typedef uint64_t* pmm_bitmap_t;
+typedef uint64_t phys_addr_t;
 
 #define PMM_BLOCK_SIZE 4096
 
@@ -47,16 +48,16 @@ extern size_t g_pmm_used_blocks;		/* The amount of blocks that are currently use
 void pmm_init(multiboot_tag_mmap_t* mmap);
 
 /* Allocates a single block of memory, returns its physical address. Returns -1 on failure. */
-uint64_t pmm_alloc();
+phys_addr_t pmm_alloc();
 
 /* Frees a single block of memory. <address> will be aligned down to <PMM_BLOCK_SIZE>. */
-void pmm_free(uint64_t address);
+void pmm_free(phys_addr_t address);
 
 /* Frees <count> blocks of memory. <address> will be aligned down to <PMM_BLOCK_SIZE>.*/
-void pmm_free_blocks(uint64_t address, size_t count);
+void pmm_free_blocks(phys_addr_t address, size_t count);
 
 /* Marks <count> blocks of memory at <address> as allocated. <address> will be aligned down to <PMM_BLOCK_SIZE>. */
-void pmm_alloc_address(uint64_t address, size_t count);
+void pmm_alloc_address(phys_addr_t address, size_t count);
 
 /* Marks a memory block as used in the bitmap */
 void pmm_bitmap_alloc(size_t block);
@@ -77,10 +78,10 @@ void pmm_bitmap_alloc_blocks(size_t start_block, size_t count);
 void pmm_bitmap_free_blocks(size_t start_block, size_t count);
 
 /* Converts a physical address to its index in the bitmap (block) */
-size_t pmm_bitmap_addr_to_block(uint64_t address);
+size_t pmm_bitmap_addr_to_block(phys_addr_t address);
 
 /* Converts a bitmap index (block) into its physical address */
-uint64_t pmm_bitmap_block_to_addr(size_t block);
+phys_addr_t pmm_bitmap_block_to_addr(size_t block);
 
 /* 
  * Finds the first free block (bit) in the bitmap. Returns its bit index (block index). 

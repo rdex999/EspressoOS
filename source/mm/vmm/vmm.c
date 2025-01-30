@@ -16,3 +16,13 @@
  */
 
 #include "mm/vmm/vmm.h"
+
+uint64_t* vmm_get_pml4()
+{
+	return (uint64_t*)read_cr3();
+}
+
+void vmm_set_pml4(uint64_t* pml4)
+{
+	write_cr3((uint64_t)pml4);
+}
