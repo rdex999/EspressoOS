@@ -30,9 +30,11 @@ typedef uint64_t virt_addr_t;
 #define VMM_VADDR_PML4E_IDX(vaddr) 		(((vaddr) >> 39) & 0x1FF)
 #define VMM_VADDR_PDPE_IDX(vaddr) 		(((vaddr) >> 30) & 0x1FF)
 #define VMM_VADDR_PD_IDX(vaddr)			(((vaddr) >> 21) & 0x1FF)
+#define VMM_VADDR_PT_IDX(vaddr)			(((vaddr) >> 12) & 0x1FF)
 
-#define VMM_PML4E_GET_PDP(pml4e) 		((pml4e) & 0x7FFFFFFFFF000)
-#define VMM_PDP_GET_PD(pdp)				VMM_PML4E_GET_PDP((pdp))		/* Get a pointer to the page directory, from the pdpt (page directory pointer table) */
+#define VMM_PML4E_GET_PDP(pml4e) 		((pml4e) & 0x7FFFFFFFFF000)		/* Get a pointer to the pdp from a pml4 entry. */
+#define VMM_PDPE_GET_PD(pdp)			VMM_PML4E_GET_PDP((pdp))		/* Get a pointer to the page directory from a pdp entry */
+#define VMM_PDE_GET_PT(pdp)				VMM_PML4E_GET_PDP((pdp))		/* Get a pointer to the page table from a pd entry */
 
 /* Initialize the virtual memory manager */
 void vmm_init();

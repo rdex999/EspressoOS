@@ -17,13 +17,37 @@
 
 #include "mm/vmm/vmm.h"
 
+uint64_t* vmm_get_pte(virt_addr_t address)
+{
+	uint64_t* pde = vmm_get_pde(address);
+	if(pde == NULL)
+		return NULL;
+
+	uint64_t* pt = (uint64_t*)VMM_PDE_GET_PT(*pde);
+	if(pt == NULL)
+		return NULL;
+
+	size_t pd_index = VMM_VADDR_PT_IDX(address);
+
+	return &pt[pd_index];
+}
+
+void vmm_set_pte(virt_addr_t address, uint64_t entry)
+{
+	uint64_t* pte = vmm_get_pte(address);
+	if(pte == NULL)
+		return;
+	
+	*pte = entry;
+}
+
 uint64_t* vmm_get_pde(virt_addr_t address)
 {
 	uint64_t* pdpe = vmm_get_pdpe(address);
 	if(pdpe == NULL)
 		return NULL;
 	
-	uint64_t* pd = (uint64_t*)VMM_PDP_GET_PD(*pdpe);
+	uint64_t* pd = (uint64_t*)VMM_PDPE_GET_PD(*pdpe);
 	if(pd == NULL)
 		return NULL;
 	
