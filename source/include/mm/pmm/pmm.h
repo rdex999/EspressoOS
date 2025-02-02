@@ -59,6 +59,9 @@ void pmm_free_blocks(phys_addr_t address, size_t count);
 /* Marks <count> blocks of memory at <address> as allocated. <address> will be aligned down to <PMM_BLOCK_SIZE>. */
 void pmm_alloc_address(phys_addr_t address, size_t count);
 
+/* Check if the block at <address> is free. Returns true if its free, false otherwise. <address> will be aligned down to <PMM_BLOCK_SIZE>. */
+bool pmm_is_free(phys_addr_t address);
+
 /* Marks a memory block as used in the bitmap */
 void pmm_bitmap_alloc(size_t block);
 

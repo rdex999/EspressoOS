@@ -29,15 +29,34 @@
 void kernel_main(multiboot_info_t* mbd)
 {
 	multiboot_tag_mmap_t* mmap = (multiboot_tag_mmap_t*)mbd->find_tag(MULTIBOOT_TAG_TYPE_MMAP);
+	if(mmap == NULL)	/* Always do null checks people, you dont want a damn headache. */
+	{
+		while(1) 
+		{ 
+			asm volatile("cli"); 
+			asm volatile("hlt");
+		}
+	}
+
 	pmm_init(mmap);
 
-	uint64_t pt = *vmm_get_pte(10llu << 12llu);
-	vmm_set_pte(10llu << 12llu, 420);
-	pt = *vmm_get_pte(10llu << 12llu);
+	phys_addr_t phys = (phys_addr_t)2*1024*1024*1024;
+	virt_addr_t virt = 3llu << 30llu;
+
+	/* Will cause a page-fault */
+	// *(int*)virt = 420;
+	// int value = *(int*)virt;
+
+	/* Map virtual address (3<<30) (page directory entry number 3) to 2GiB address. */
+	int res = vmm_map_virtual_to_physical(virt, phys, VMM_PAGE_P | VMM_PAGE_RW);
+
+	*(int*)virt = 420;
+	int value = *(int*)virt;
+
 
 	while(1)
 	{
-		asm("cli");
-		asm("hlt");
+		asm volatile("cli");
+		asm volatile("hlt");
 	}
 } 

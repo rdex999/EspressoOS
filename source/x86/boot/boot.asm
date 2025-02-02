@@ -71,6 +71,11 @@ start:
 	mov esp, stack_top						; Set up the stack.
 	push ebx								; Save multiboot2 information structure address.
 
+	; TODO: For some reason, when compiling without the -g (debug information), 
+	; grub places the multiboot info structure at 0x4000, like what the hell grub, realy.
+	; So, in the future, copy the multiboot information structure to the end of the kernel, 
+	; and set up the physical memory manager to use its bitmap at the end of the multiboot information structure.
+
 	call check_long_mode
 	call setup_page_tables
 	call enter_long_mode

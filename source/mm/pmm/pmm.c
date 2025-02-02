@@ -100,6 +100,12 @@ void pmm_alloc_address(phys_addr_t address, size_t count)
 	pmm_bitmap_alloc_blocks(block, count);
 }
 
+bool pmm_is_free(phys_addr_t address)
+{
+	size_t block = pmm_bitmap_addr_to_block(ALIGN(address, PMM_BLOCK_SIZE));
+	return pmm_bitmap_is_free(block);
+}
+
 /* In both of these functions, for some reason, i need to explicitly say the "1" is an unsigned 64 bit integer (llu) */
 void pmm_bitmap_alloc(size_t block)
 {

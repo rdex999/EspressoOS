@@ -19,8 +19,9 @@
 ; ---------------- [ LONG MODE SETUP FUNCTIONS ] ----------------
 ;
 
-%define PG_PRESENT (1 << 0)
-%define PG_READ_WRITE (1 << 1)
+%define PAGE_P 		(1 << 0)
+%define PAGE_RW		(1 << 1)
+%define PAGE_PS		(1 << 7)
 
 section .text
 
@@ -79,24 +80,23 @@ setup_page_tables:
 	mov edi, 1000h							; First PML4T address
 	mov cr3, edi							; CR3 points to the first PML4T
 	xor eax, eax							; Value to set pages to - null
-	mov ecx, (4000h + 1000h - 1000h) / 4	; Amount of bytes to fill, divided by 4 because writing dwords
+	mov ecx, (2000h + 1000h - 1000h) / 4	; Amount of bytes to fill, divided by 4 because writing dwords
 	rep stosd								; Set pages to null
 
-	; Setup the pointers
+	; Identity map the first GiB
 	mov edi, cr3							; Get a pointer to the PML4T
-	mov dword [edi + 0*1000h], 2000h | PG_PRESENT | PG_READ_WRITE	; PML4T[0] = PDPT
-	mov dword [edi + 1*1000h], 3000h | PG_PRESENT | PG_READ_WRITE	; PDPT[0] = PDT
-	mov dword [edi + 2*1000h], 4000h | PG_PRESENT | PG_READ_WRITE	; PDT[0] = PT
+	mov dword [edi + 0*1000h], 2000h | PAGE_P | PAGE_RW		; PML4T[0] = PDPT
+	mov dword [edi + 1*1000h], PAGE_PS | PAGE_P | PAGE_RW	; PDPT[0] last paging structure, maps
 
 	; Identity map the first 2MiB by filling the first PT
-	add edi, 3 * 1000h						; EDI points at the first entry of the PT 	EDI=&PT[0]
-	mov ecx, 512							; Amount of entries to fill
-	mov al, PG_PRESENT | PG_READ_WRITE		; Enable Preset + Read/Write
-.pt_fill_loop:
-	mov [edi], eax							; Initialize current PT entry to the next physical address
-	add edi, 8								; Advance to the next PT entry
-	add eax, 4096							; Increase current physical address
-	loop .pt_fill_loop						; Continue filling the tables
+; 	add edi, 3 * 1000h						; EDI points at the first entry of the PT 	EDI=&PT[0]
+; 	mov ecx, 512							; Amount of entries to fill
+; 	mov al, PG_PRESENT | PG_READ_WRITE		; Enable Preset + Read/Write
+; .pt_fill_loop:
+; 	mov [edi], eax							; Initialize current PT entry to the next physical address
+; 	add edi, 8								; Advance to the next PT entry
+; 	add eax, 4096							; Increase current physical address
+; 	loop .pt_fill_loop						; Continue filling the tables
 
 	ret
 
