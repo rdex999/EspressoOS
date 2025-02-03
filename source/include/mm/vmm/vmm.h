@@ -27,19 +27,6 @@ typedef uint64_t virt_addr_t;
 #define VMM_PAGE_SIZE 					PMM_BLOCK_SIZE
 #define VMM_PAGE_TABLE_LENGTH 			512
 
-#define VMM_VADDR_PML4E_IDX(vaddr) 		(((vaddr) >> 39) & 0x1FF)
-#define VMM_VADDR_PDPE_IDX(vaddr) 		(((vaddr) >> 30) & 0x1FF)
-#define VMM_VADDR_PD_IDX(vaddr)			(((vaddr) >> 21) & 0x1FF)
-#define VMM_VADDR_PT_IDX(vaddr)			(((vaddr) >> 12) & 0x1FF)
-
-/* Get a pointer to the paging structure/physical block the entry points to. */
-#define VMM_GET_ENTRY_TABLE(entry) 					((entry) & 0x7FFFFFFFFF000)
-
-/* Set the lower paging structure/physical block of the given entry. */
-#define VMM_SET_ENTRY_TABLE(entry, table_addr) 		(((entry) & 0xFFF0000000000FFF) | ((table_addr) & 0x7FFFFFFFFF000))
-
-#define VMM_CREATE_TABLE_ENTRY(flags, table_paddr)	(((flags) & 0xFFF0000000000FFF) | ((table_paddr) & 0xFFFFFFFFFF000))
-
 /* 
  * Page entry flags, for detailes (future me who forgets all of that) 
  * visit the AMD64 Architecture Programmer’s Manual Volume 2, page 154 (215 in PDF)
@@ -60,13 +47,36 @@ typedef uint64_t virt_addr_t;
 #define VMM_PAGE_PDE_PDPE_PAT	(1 << 12)	/* Page Attribute Table, for page directory entries and page directory pointer table entries. */
 #define VMM_PAGE_NX 			(1 << 63)	/* No Execute, for page table entries */
 
+#define VMM_VADDR_PML4E_IDX(vaddr) 		(((vaddr) >> 39) & 0x1FF)
+#define VMM_VADDR_PDPE_IDX(vaddr) 		(((vaddr) >> 30) & 0x1FF)
+#define VMM_VADDR_PD_IDX(vaddr)			(((vaddr) >> 21) & 0x1FF)
+#define VMM_VADDR_PT_IDX(vaddr)			(((vaddr) >> 12) & 0x1FF)
+
+/* Get a pointer to the paging structure/physical block the entry points to. */
+#define VMM_GET_ENTRY_TABLE(entry) 					((entry) & 0x7FFFFFFFFF000)
+
+/* Set the lower paging structure/physical block of the given entry. */
+#define VMM_SET_ENTRY_TABLE(entry, table_addr) 		(((entry) & 0xFFF0000000000FFF) | ((table_addr) & 0x7FFFFFFFFF000))
+
+/* Create a table entry, set its flags and the physical address of the table/block it points to. */
+#define VMM_CREATE_TABLE_ENTRY(flags, table_paddr)	(((flags) & 0xFFF0000000000FFF) | ((table_paddr) & 0xFFFFFFFFFF000))
+
+/* 
+ * Get/set/inc/dec the value of the "Lower Used" Bits.
+ * Used in the "available" bits (52-62) of an entry, to count the amount of used entries in the table the entry points to.
+ * For example, in a page directory entry, these bits will count the amount of used entries in the page table the entry points to.
+ */
+#define VMM_GET_ENTRY_LU(entry) 		(((entry) >> 52) & 0x3FF)
+#define VMM_SET_ENTRY_LU(entry, count) 	(((entry) & 0xC00FFFFFFFFFFFFF) | (((count) & 0x3FF) << 52))
+#define VMM_INC_ENTRY_LU(entry)			(VMM_SET_ENTRY_LU((entry), VMM_GET_ENTRY_LU((entry)) + 1))
+#define VMM_DEC_ENTRY_LU(entry)			(VMM_SET_ENTRY_LU((entry), VMM_GET_ENTRY_LU((entry)) - 1))
+
 /* 
  * For information about virtual address translation (the structure of a 64bit pointer), (again, me in 5 minutes forgetting everything)
  * or information about the paging structures (pte, pde, pdpe, etc..)
  * visit AMD64 Architecture Programmer’s Manual Volume 2, page 142 (203 in the PDF)
  * https://www.amd.com/content/dam/amd/en/documents/processor-tech-docs/programmer-references/24593.pdf
  */
-
 
 /* Initialize the virtual memory manager */
 void vmm_init();
@@ -136,17 +146,35 @@ uint64_t* vmm_get_pte(virt_addr_t address);
 /* Sets the page table entry of a given virtual address. */
 void vmm_set_pte(virt_addr_t address, uint64_t entry);
 
+/* Allocates the pt entry, updates the LU bits in the entries pd entry. */
+void vmm_alloc_pte(virt_addr_t address);
+
+/* Frees the pt entry. Updates the LU bits in the entries pd entry. */
+void vmm_free_pte(virt_addr_t address);
+
 /* Returns a pointer to the page directory entry of a given virtual address. Will return null on failure. */
 uint64_t* vmm_get_pde(virt_addr_t address);
 
 /* Sets the page directory entry of a given virtual address. */
 void vmm_set_pde(virt_addr_t address, uint64_t entry);
 
+/* Allocates the pd entry, updates the LU bits in the entries pdp entry. */
+void vmm_alloc_pde(virt_addr_t address);
+
+/* Frees the pd entry. Updates the LU bits in the entries pdp entry. */
+void vmm_free_pde(virt_addr_t address);
+
 /* Returns a pointer to the page directory pointer table entry of a given virtual address. Will return null on failure. */
 uint64_t* vmm_get_pdpe(virt_addr_t address);
 
 /* Sets the page directory pointer table entry of a given virtual address. */
 void vmm_set_pdpe(virt_addr_t address, uint64_t entry);
+
+/* Allocates the pdp entry, updates the LU bits in the entries pml4 entry. */
+void vmm_alloc_pdpe(virt_addr_t address);
+
+/* Frees the pdp entry. Updates the LU bits in the entries pml4 entry. */
+void vmm_free_pdpe(virt_addr_t address);
 
 /* Returns a pointer to the page map level 4 entry of a given virtual address. */
 uint64_t* vmm_get_pml4e(virt_addr_t address);

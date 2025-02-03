@@ -157,6 +157,32 @@ void vmm_set_pdpe(virt_addr_t address, uint64_t entry)
 	*pdpe = entry;
 }
 
+void vmm_alloc_pdpe(virt_addr_t address)
+{
+	uint64_t* pml4e = vmm_get_pml4e(address);
+	*pml4e = VMM_INC_ENTRY_LU(*pml4e);
+}
+
+void vmm_free_pdpe(virt_addr_t address)
+{
+	uint64_t* pml4e = vmm_get_pml4e(address);
+	uint64_t* pdpe = vmm_get_pdpe(address);
+
+	if(pdpe == NULL)
+		return;
+
+	/* Mark the entry as not preset, basicaly free it. */
+	*pdpe = 0llu;
+
+	/* 
+	 * Decrease the amount of used pdp entries, in the pml4 entry. (LU bits). 
+	 * If the amount of used entries is 0, free the physical block that was used for the pdp.
+	 */
+	*pml4e = VMM_DEC_ENTRY_LU(*pml4e);
+	if(VMM_GET_ENTRY_LU(*pml4e) == 0)
+		pmm_free(VMM_GET_ENTRY_TABLE(*pml4e));
+}
+
 uint64_t* vmm_get_pml4e(virt_addr_t address)
 {
 	int pml4e_index = VMM_VADDR_PML4E_IDX(address);

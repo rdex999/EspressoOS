@@ -40,18 +40,13 @@ void kernel_main(multiboot_info_t* mbd)
 
 	pmm_init(mmap);
 
-	virt_addr_t virt = 3llu << 30llu;
+	virt_addr_t virt = 3llu << 30llu;	/* pdpt entry number 3 */
 
-	/* Will cause a page-fault */
-	// *(int*)virt = 420;
-	// int value = *(int*)virt;
+	vmm_alloc_pdpe(virt);
+	int lower_used = VMM_GET_ENTRY_LU(*vmm_get_pml4e(virt));
 
-	/* Map virtual address (3<<30) (page directory entry number 3) to some address. */
-	int res = vmm_map_pages(virt, VMM_PAGE_P | VMM_PAGE_RW, 1);
-
-	*(int*)virt = 420;
-	int value = *(int*)virt;
-
+	vmm_free_pdpe(virt);
+	lower_used = VMM_GET_ENTRY_LU(*vmm_get_pml4e(virt));
 
 	while(1)
 	{
