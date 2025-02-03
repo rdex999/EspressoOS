@@ -40,15 +40,14 @@ void kernel_main(multiboot_info_t* mbd)
 
 	pmm_init(mmap);
 
-	phys_addr_t phys = (phys_addr_t)2*1024*1024*1024;
 	virt_addr_t virt = 3llu << 30llu;
 
 	/* Will cause a page-fault */
 	// *(int*)virt = 420;
 	// int value = *(int*)virt;
 
-	/* Map virtual address (3<<30) (page directory entry number 3) to 2GiB address. */
-	int res = vmm_map_virtual_to_physical(virt, phys, VMM_PAGE_P | VMM_PAGE_RW);
+	/* Map virtual address (3<<30) (page directory entry number 3) to some address. */
+	int res = vmm_map_pages(virt, VMM_PAGE_P | VMM_PAGE_RW, 1);
 
 	*(int*)virt = 420;
 	int value = *(int*)virt;

@@ -17,6 +17,27 @@
 
 #include "mm/vmm/vmm.h"
 
+int vmm_map_page(virt_addr_t address, uint64_t flags)
+{
+	return vmm_map_pages(address, flags, 1);
+}
+
+int vmm_map_pages(virt_addr_t address, uint64_t flags, size_t count)
+{
+	virt_addr_t aligned_addr = ALIGN(address, VMM_PAGE_SIZE);
+	for(virt_addr_t vaddr = aligned_addr; vaddr < aligned_addr + count * VMM_PAGE_SIZE; vaddr += VMM_PAGE_SIZE)
+	{
+		phys_addr_t paddr = pmm_alloc();
+		if(paddr == (phys_addr_t)-1)
+			return 1;
+
+		int status = vmm_map_virtual_to_physical(vaddr, paddr, flags);
+		if(status != 0)
+			return status;
+	}
+	return 0;
+}
+
 int vmm_map_virtual_to_physical(virt_addr_t vaddr, phys_addr_t paddr, uint64_t flags)
 {
 	uint64_t* pml4e = vmm_get_pml4e(vaddr);

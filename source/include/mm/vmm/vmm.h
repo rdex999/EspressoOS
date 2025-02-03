@@ -89,14 +89,16 @@ bool vmm_is_free_page(virt_addr_t address);
 /*
  * Maps the given virtual address to a physical address, sets the given flags.
  * Uses the physical memory manager to find a free physical memory block, and allocates it. 
+ * Returns 0 on success, an error code otherwise.
  */
-void vmm_map_page(virt_addr_t address, uint64_t flags);
+int vmm_map_page(virt_addr_t address, uint64_t flags);
 
 /*
  * Maps <count> pages of the given virtual address to a physical address, sets the given flags.
  * Uses the physical memory manager to find a free physical memory blocks, and allocates them. 
+ * Returns 0 on success, an error code otherwise.
  */
-void vmm_map_pages(virt_addr_t address, uint64_t flags, size_t count);
+int vmm_map_pages(virt_addr_t address, uint64_t flags, size_t count);
 
 /* 
  * Map a virtual address to a physical address, set the given flags for the lowest page table (only for the PTE). 
