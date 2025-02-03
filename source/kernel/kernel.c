@@ -40,13 +40,15 @@ void kernel_main(multiboot_info_t* mbd)
 
 	pmm_init(mmap);
 
-	virt_addr_t virt = 3llu << 30llu;	/* pdpt entry number 3 */
+	/* Using pdpt entry number 1 because number 0 uses the PS flag. */
+	virt_addr_t virt = (1llu << 30llu) | (3llu << 21llu);	/* pdt entry number 3 */
+	vmm_map_page(virt, VMM_PAGE_P | VMM_PAGE_RW);
 
-	vmm_alloc_pdpe(virt);
-	int lower_used = VMM_GET_ENTRY_LU(*vmm_get_pml4e(virt));
+	vmm_alloc_pde(virt);
+	int lower_used = VMM_GET_ENTRY_LU(*vmm_get_pdpe(virt));
 
-	vmm_free_pdpe(virt);
-	lower_used = VMM_GET_ENTRY_LU(*vmm_get_pml4e(virt));
+	vmm_free_pde(virt);
+	lower_used = VMM_GET_ENTRY_LU(*vmm_get_pdpe(virt));
 
 	while(1)
 	{
