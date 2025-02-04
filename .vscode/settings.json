@@ -5,6 +5,7 @@
 		"*.h": "cpp",
 		"*.c": "cpp",
 		"cstdlib": "cpp",
-		"cstddef": "cpp"
+		"cstddef": "cpp",
+		"random": "cpp"
 	}
 }

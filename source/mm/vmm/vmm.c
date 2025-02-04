@@ -17,13 +17,13 @@
 
 #include "mm/vmm/vmm.h"
 
-int vmm_map_page(virt_addr_t address, uint64_t flags)
+int vmm_map_virtual_page(virt_addr_t address, uint64_t flags)
 {
 	phys_addr_t paddr = pmm_alloc();
 	if(paddr == (phys_addr_t)-1)
 		return 1;
 
-	virt_addr_t vaddr = ALIGN(address, VMM_PAGE_SIZE);
+	virt_addr_t vaddr = ALIGN_DOWN(address, VMM_PAGE_SIZE);
 	int status = vmm_map_virtual_to_physical(vaddr, paddr, flags);
 	if(status != 0)
 		return status;
@@ -31,12 +31,12 @@ int vmm_map_page(virt_addr_t address, uint64_t flags)
 	return 0;
 }
 
-int vmm_map_pages(virt_addr_t address, uint64_t flags, size_t count)
+int vmm_map_virtual_pages(virt_addr_t address, uint64_t flags, size_t count)
 {
-	virt_addr_t aligned_addr = ALIGN(address, VMM_PAGE_SIZE);
+	virt_addr_t aligned_addr = ALIGN_DOWN(address, VMM_PAGE_SIZE);
 	for(virt_addr_t vaddr = aligned_addr; vaddr < aligned_addr + count * VMM_PAGE_SIZE; vaddr += VMM_PAGE_SIZE)
 	{
-		int status = vmm_map_page(vaddr, flags);
+		int status = vmm_map_virtual_page(vaddr, flags);
 		if(status != 0)
 			return status;
 	}
@@ -47,8 +47,7 @@ int vmm_map_virtual_to_physical(virt_addr_t vaddr, phys_addr_t paddr, uint64_t f
 {
 	uint64_t* pml4e = vmm_get_pml4e(vaddr);
 	if(!vmm_is_valid_entry(*pml4e))
-		if(vmm_init_entry(pml4e, VMM_PAGE_P | VMM_PAGE_RW) != 0)
-			return 1;		/* TODO: Handle error */
+		vmm_alloc_pml4e(vaddr, VMM_PAGE_P | VMM_PAGE_RW);
 
 	/* 
 	 * vmm_get_pdpe cant return NULL, because the pdp was created with vmm_init_entry.
@@ -56,20 +55,19 @@ int vmm_map_virtual_to_physical(virt_addr_t vaddr, phys_addr_t paddr, uint64_t f
 	 */
 	uint64_t* pdpe = vmm_get_pdpe(vaddr);
 	if(!vmm_is_valid_entry(*pdpe))
-		if(vmm_init_entry(pdpe, VMM_PAGE_P | VMM_PAGE_RW) != 0)
-			return 1; 	/* TODO: Handle error */
+		vmm_alloc_pdpe(vaddr, VMM_PAGE_P | VMM_PAGE_RW);
 
 	uint64_t* pde = vmm_get_pde(vaddr);
 	if(!vmm_is_valid_entry(*pde))
-		if(vmm_init_entry(pde, VMM_PAGE_P | VMM_PAGE_RW) != 0)
-			return 1; 	/* TODO: Handle error */
+		vmm_alloc_pde(vaddr, VMM_PAGE_P | VMM_PAGE_RW);
 	
-	phys_addr_t aligned_paddr = ALIGN(paddr, PMM_BLOCK_SIZE);
+	phys_addr_t aligned_paddr = ALIGN_DOWN(paddr, PMM_BLOCK_SIZE);
 	if(pmm_is_free(aligned_paddr))
 		pmm_alloc_address(aligned_paddr, 1);
 
 	uint64_t* pte = vmm_get_pte(vaddr);
 	*pte = VMM_CREATE_TABLE_ENTRY(flags, aligned_paddr);
+	*pde = VMM_INC_ENTRY_LU(*pde);
 
 	return 0;
 }

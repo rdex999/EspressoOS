@@ -40,25 +40,16 @@ void kernel_main(multiboot_info_t* mbd)
 
 	pmm_init(mmap);
 
-	/* Using pdpt entry number 1 because number 0 uses the PS flag. */
-	virt_addr_t virt = (1llu << 30llu) | (3llu << 21llu);	/* pdt entry number 3 */
-	// vmm_map_page(virt, VMM_PAGE_P | VMM_PAGE_RW);
+	virt_addr_t virt = (3llu << 30llu) + 20;
 
-	vmm_alloc_pdpe(virt, VMM_PAGE_P | VMM_PAGE_RW);
-	vmm_alloc_pde(virt, VMM_PAGE_P | VMM_PAGE_RW);
-	vmm_alloc_pte(virt, VMM_PAGE_P | VMM_PAGE_RW);
+	/* Will cause a page-fault */
+	// *(int*)virt = 420;
+	// int value = *(int*)virt;
 
-	// int lower_used = VMM_GET_ENTRY_LU(*vmm_get_pdpe(virt));
-
-	// vmm_free_pde(virt);
-	// lower_used = VMM_GET_ENTRY_LU(*vmm_get_pdpe(virt));
-	int lower_used = VMM_GET_ENTRY_LU(*vmm_get_pde(virt));
-
-	vmm_free_pte(virt);
-
-	uint64_t* pde = vmm_get_pde(virt);
-	if(pde != NULL)
-		lower_used = VMM_GET_ENTRY_LU(*vmm_get_pde(virt));
+	/* Map virtual address (3<<30) (page directory entry number 3) to 2GiB address. */
+	int res = vmm_map_virtual_page(virt, VMM_PAGE_P | VMM_PAGE_RW);
+	*(int*)virt = 420;
+	int value = *(int*)virt;
 
 	while(1)
 	{

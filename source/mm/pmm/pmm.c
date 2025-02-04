@@ -62,7 +62,7 @@ void pmm_init(multiboot_tag_mmap_t* mmap)
 		multiboot_mmap_entry_t* entry = mmap->index(i);
 		if(entry->type != MULTIBOOT_MEMORY_AVAILABLE)
 		{
-			phys_addr_t aligned_addr = ALIGN(entry->addr, PMM_BLOCK_SIZE);
+			phys_addr_t aligned_addr = ALIGN_DOWN(entry->addr, PMM_BLOCK_SIZE);
 			size_t real_length = entry->len + (entry->addr - aligned_addr);
 			size_t blocks = DIV_ROUND_UP(real_length, PMM_BLOCK_SIZE);
 			pmm_alloc_address(aligned_addr, blocks);
@@ -82,27 +82,27 @@ phys_addr_t pmm_alloc()
 
 void pmm_free(phys_addr_t address)
 {
-	phys_addr_t aligned_address = ALIGN(address, PMM_BLOCK_SIZE);
+	phys_addr_t aligned_address = ALIGN_DOWN(address, PMM_BLOCK_SIZE);
 	pmm_free_blocks(aligned_address, 1);
 }
 
 void pmm_free_blocks(phys_addr_t address, size_t count)
 {
-	phys_addr_t aligned_address = ALIGN(address, PMM_BLOCK_SIZE);
+	phys_addr_t aligned_address = ALIGN_DOWN(address, PMM_BLOCK_SIZE);
 	size_t block = pmm_bitmap_addr_to_block(aligned_address);
 	pmm_bitmap_free_blocks(block, count);
 }
 
 void pmm_alloc_address(phys_addr_t address, size_t count)
 {
-	phys_addr_t aligned_address = ALIGN(address, PMM_BLOCK_SIZE);
+	phys_addr_t aligned_address = ALIGN_DOWN(address, PMM_BLOCK_SIZE);
 	size_t block = pmm_bitmap_addr_to_block(aligned_address);
 	pmm_bitmap_alloc_blocks(block, count);
 }
 
 bool pmm_is_free(phys_addr_t address)
 {
-	size_t block = pmm_bitmap_addr_to_block(ALIGN(address, PMM_BLOCK_SIZE));
+	size_t block = pmm_bitmap_addr_to_block(ALIGN_DOWN(address, PMM_BLOCK_SIZE));
 	return pmm_bitmap_is_free(block);
 }
 
