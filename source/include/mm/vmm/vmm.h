@@ -47,10 +47,15 @@ typedef uint64_t virt_addr_t;
 #define VMM_PAGE_PDE_PDPE_PAT	(1 << 12)	/* Page Attribute Table, for page directory entries and page directory pointer table entries. */
 #define VMM_PAGE_NX 			(1 << 63)	/* No Execute, for page table entries */
 
-#define VMM_VADDR_PML4E_IDX(vaddr) 		(((vaddr) >> 39) & 0x1FF)
-#define VMM_VADDR_PDPE_IDX(vaddr) 		(((vaddr) >> 30) & 0x1FF)
-#define VMM_VADDR_PD_IDX(vaddr)			(((vaddr) >> 21) & 0x1FF)
-#define VMM_VADDR_PT_IDX(vaddr)			(((vaddr) >> 12) & 0x1FF)
+#define VMM_VADDR_PML4E_IDX(vaddr) 			(((vaddr) >> 39) & 0x1FF)
+#define VMM_VADDR_PDPE_IDX(vaddr) 			(((vaddr) >> 30) & 0x1FF)
+#define VMM_VADDR_PD_IDX(vaddr)				(((vaddr) >> 21) & 0x1FF)
+#define VMM_VADDR_PT_IDX(vaddr)				(((vaddr) >> 12) & 0x1FF)
+
+#define VMM_VADDR_SET_PT_IDX(vaddr, idx)	(((vaddr) & ~(0x1FF << 12)) | ((idx) & 1023))
+#define VMM_VADDR_SET_PD_IDX(vaddr, idx)	(((vaddr) & ~(0x1FF << 21)) | ((idx) & 1023))
+#define VMM_VADDR_SET_PDP_IDX(vaddr, idx)	(((vaddr) & ~(0x1FF << 30)) | ((idx) & 1023))
+#define VMM_VADDR_SET_PML4_IDX(vaddr, idx)	(((vaddr) & ~(0x1FF << 39)) | ((idx) & 1023))
 
 /* Get a pointer to the paging structure/physical block the entry points to. */
 #define VMM_GET_ENTRY_TABLE(entry) 					((entry) & 0x7FFFFFFFFF000)

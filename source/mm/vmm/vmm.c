@@ -124,6 +124,35 @@ uint64_t* vmm_get_pde(virt_addr_t address)
 	return &pd[pde_index];
 }
 
+void vmm_alloc_pte(virt_addr_t address)
+{
+	uint64_t* pde = vmm_get_pde(address);
+	if(pde != NULL)	
+		*pde = VMM_INC_ENTRY_LU(*pde);
+}
+
+void vmm_free_pte(virt_addr_t address)
+{
+	uint64_t* pde = vmm_get_pde(address);
+	uint64_t* pte = vmm_get_pte(address);
+
+	/* If the pte is not null, the pde cannot be null. */
+	if(pte == NULL)
+		return;
+
+	/* Free the physical block the entry points to, and mark the entry as not preset. Basicaly free it. */
+	pmm_free(VMM_GET_ENTRY_TABLE(*pte));
+	*pte = 0llu;
+
+	/* 
+	 * Decrease the amount of used pt entries, in the pd entry. (LU bits). 
+	 * If the amount of used entries is 0, free the pd entry.
+	 */
+	*pde = VMM_DEC_ENTRY_LU(*pde);
+	if(VMM_GET_ENTRY_LU(*pde) == 0)
+		vmm_free_pde(address);
+}
+
 void vmm_set_pde(virt_addr_t address, uint64_t entry)
 {
 	uint64_t* pde = vmm_get_pde(address);
@@ -149,7 +178,34 @@ void vmm_free_pde(virt_addr_t address)
 	if(pde == NULL)
 		return;
 
-	/* Mark the entry as not preset, basicaly free it. */
+	/* 
+	 * Free each pt entry under the pt table the pde points to. 
+	 * The vmm_free_pte function will attempt to decrement the LU count in this pde, 
+	 * so if its zero it will call this function, to free the pde. As we only want to free the pt entries, without any recursion,
+	 * set the value of the LU bits in this entry to 1023, so there will be no recursion. (LU will not be zero)
+	 */
+	int pt_to_free_count = VMM_GET_ENTRY_LU(*pde);
+	*pde = VMM_SET_ENTRY_LU(*pde, (size_t)1023);
+	uint64_t* pt = (uint64_t*)VMM_GET_ENTRY_TABLE(*pde);
+	for(int i = 0; i < VMM_PAGE_TABLE_LENGTH; ++i)
+	{
+		/* 
+		 * If there are no more pt's to free, break out of the loop. 
+		 * This if statement not right after decrementing <pt_to_free_count> 
+		 * so it handles the case when <pt_to_free_count> is 0 before even entering the loop.
+		 */
+		if(pt_to_free_count == 0)							
+			break;		
+
+		if(vmm_is_valid_entry(pt[i]))
+		{
+			vmm_free_pte(VMM_VADDR_SET_PT_IDX(address, i));
+			--pt_to_free_count;
+		}
+	}
+	
+	/* Free the physical block the entry points to, and mark the entry as not preset. Basicaly free it. */
+	pmm_free(VMM_GET_ENTRY_TABLE(*pde));
 	*pde = 0llu;
 
 	/* 
@@ -199,7 +255,34 @@ void vmm_free_pdpe(virt_addr_t address)
 	if(pdpe == NULL)
 		return;
 
-	/* Mark the entry as not preset, basicaly free it. */
+	/* 
+	 * Free each pd entry under the pd table the pdpe points to. 
+	 * The vmm_free_pde function will attempt to decrement the LU count in this pdpe, 
+	 * so if its zero it will call this function, to free the pdpe. As we only want to free the pd entries, without any recursion,
+	 * set the value of the LU bits in this entry to 1023, so there will be no recursion. (LU will not be zero)
+	 */
+	int pd_to_free_count = VMM_GET_ENTRY_LU(*pdpe);
+	*pdpe = VMM_SET_ENTRY_LU(*pdpe, (size_t)1023);
+	uint64_t* pd = (uint64_t*)VMM_GET_ENTRY_TABLE(*pdpe);
+	for(int i = 0; i < VMM_PAGE_TABLE_LENGTH; ++i)
+	{
+		/* 
+		 * If there are no more pd's to free, break out of the loop. 
+		 * This if statement not right after decrementing <pd_to_free_count> 
+		 * so it handles the case when <pd_to_free_count> is 0 before entering the loop.
+		 */
+		if(pd_to_free_count == 0)							
+			break;											
+
+		if(vmm_is_valid_entry(pd[i]))
+		{
+			vmm_free_pde(VMM_VADDR_SET_PD_IDX(address, i));
+			--pd_to_free_count;
+		}
+	}
+
+	/* Free the physical block the entry points to, and mark the entry as not preset. Basicaly free it. */
+	pmm_free(VMM_GET_ENTRY_TABLE(*pdpe));
 	*pdpe = 0llu;
 
 	/* 

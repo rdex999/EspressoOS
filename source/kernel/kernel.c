@@ -44,11 +44,21 @@ void kernel_main(multiboot_info_t* mbd)
 	virt_addr_t virt = (1llu << 30llu) | (3llu << 21llu);	/* pdt entry number 3 */
 	vmm_map_page(virt, VMM_PAGE_P | VMM_PAGE_RW);
 
+	vmm_alloc_pdpe(virt);
 	vmm_alloc_pde(virt);
-	int lower_used = VMM_GET_ENTRY_LU(*vmm_get_pdpe(virt));
+	vmm_alloc_pte(virt);
 
-	vmm_free_pde(virt);
-	lower_used = VMM_GET_ENTRY_LU(*vmm_get_pdpe(virt));
+	// int lower_used = VMM_GET_ENTRY_LU(*vmm_get_pdpe(virt));
+
+	// vmm_free_pde(virt);
+	// lower_used = VMM_GET_ENTRY_LU(*vmm_get_pdpe(virt));
+	int lower_used = VMM_GET_ENTRY_LU(*vmm_get_pde(virt));
+
+	vmm_free_pte(virt);
+
+	uint64_t* pde = vmm_get_pde(virt);
+	if(pde != NULL)
+		lower_used = VMM_GET_ENTRY_LU(*vmm_get_pde(virt));
 
 	while(1)
 	{
