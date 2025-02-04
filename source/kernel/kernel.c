@@ -42,11 +42,11 @@ void kernel_main(multiboot_info_t* mbd)
 
 	/* Using pdpt entry number 1 because number 0 uses the PS flag. */
 	virt_addr_t virt = (1llu << 30llu) | (3llu << 21llu);	/* pdt entry number 3 */
-	vmm_map_page(virt, VMM_PAGE_P | VMM_PAGE_RW);
+	// vmm_map_page(virt, VMM_PAGE_P | VMM_PAGE_RW);
 
-	vmm_alloc_pdpe(virt);
-	vmm_alloc_pde(virt);
-	vmm_alloc_pte(virt);
+	vmm_alloc_pdpe(virt, VMM_PAGE_P | VMM_PAGE_RW);
+	vmm_alloc_pde(virt, VMM_PAGE_P | VMM_PAGE_RW);
+	vmm_alloc_pte(virt, VMM_PAGE_P | VMM_PAGE_RW);
 
 	// int lower_used = VMM_GET_ENTRY_LU(*vmm_get_pdpe(virt));
 

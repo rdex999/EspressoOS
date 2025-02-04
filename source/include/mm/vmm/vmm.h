@@ -152,7 +152,7 @@ uint64_t* vmm_get_pte(virt_addr_t address);
 void vmm_set_pte(virt_addr_t address, uint64_t entry);
 
 /* Allocates the pt entry, updates the LU bits in the entries pd entry. */
-void vmm_alloc_pte(virt_addr_t address);
+void vmm_alloc_pte(virt_addr_t address, uint64_t flags);
 
 /* Frees the pt entry. Updates the LU bits in the entries pd entry. */
 void vmm_free_pte(virt_addr_t address);
@@ -164,7 +164,7 @@ uint64_t* vmm_get_pde(virt_addr_t address);
 void vmm_set_pde(virt_addr_t address, uint64_t entry);
 
 /* Allocates the pd entry, updates the LU bits in the entries pdp entry. */
-void vmm_alloc_pde(virt_addr_t address);
+void vmm_alloc_pde(virt_addr_t address, uint64_t flags);
 
 /* Frees the pd entry. Updates the LU bits in the entries pdp entry. */
 void vmm_free_pde(virt_addr_t address);
@@ -176,7 +176,7 @@ uint64_t* vmm_get_pdpe(virt_addr_t address);
 void vmm_set_pdpe(virt_addr_t address, uint64_t entry);
 
 /* Allocates the pdp entry, updates the LU bits in the entries pml4 entry. */
-void vmm_alloc_pdpe(virt_addr_t address);
+void vmm_alloc_pdpe(virt_addr_t address, uint64_t flags);
 
 /* Frees the pdp entry. Updates the LU bits in the entries pml4 entry. */
 void vmm_free_pdpe(virt_addr_t address);
@@ -186,6 +186,12 @@ uint64_t* vmm_get_pml4e(virt_addr_t address);
 
 /* Sets the page map level 4 entry of a given virtual address. */
 void vmm_set_pml4e(virt_addr_t address, uint64_t entry);
+
+/* Allocates the pml4 entry. */
+void vmm_alloc_pml4e(virt_addr_t address, uint64_t flags);
+
+/* Frees the pml4 entry. */
+void vmm_free_pml4e(virt_addr_t address);
 
 /* Returns the address of the page map level 4 paging structure. (The value of the CR3 register) */
 uint64_t* vmm_get_pml4();

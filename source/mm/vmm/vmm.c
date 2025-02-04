@@ -19,7 +19,16 @@
 
 int vmm_map_page(virt_addr_t address, uint64_t flags)
 {
-	return vmm_map_pages(address, flags, 1);
+	phys_addr_t paddr = pmm_alloc();
+	if(paddr == (phys_addr_t)-1)
+		return 1;
+
+	virt_addr_t vaddr = ALIGN(address, VMM_PAGE_SIZE);
+	int status = vmm_map_virtual_to_physical(vaddr, paddr, flags);
+	if(status != 0)
+		return status;
+
+	return 0;
 }
 
 int vmm_map_pages(virt_addr_t address, uint64_t flags, size_t count)
@@ -27,11 +36,7 @@ int vmm_map_pages(virt_addr_t address, uint64_t flags, size_t count)
 	virt_addr_t aligned_addr = ALIGN(address, VMM_PAGE_SIZE);
 	for(virt_addr_t vaddr = aligned_addr; vaddr < aligned_addr + count * VMM_PAGE_SIZE; vaddr += VMM_PAGE_SIZE)
 	{
-		phys_addr_t paddr = pmm_alloc();
-		if(paddr == (phys_addr_t)-1)
-			return 1;
-
-		int status = vmm_map_virtual_to_physical(vaddr, paddr, flags);
+		int status = vmm_map_page(vaddr, flags);
 		if(status != 0)
 			return status;
 	}
@@ -124,11 +129,20 @@ uint64_t* vmm_get_pde(virt_addr_t address)
 	return &pd[pde_index];
 }
 
-void vmm_alloc_pte(virt_addr_t address)
+void vmm_alloc_pte(virt_addr_t address, uint64_t flags)
 {
+	uint64_t* pte = vmm_get_pte(address);
+	if(pte == NULL)
+		return;
+
+	phys_addr_t paddr = pmm_alloc();
+	if(paddr == (phys_addr_t)-1)
+		return;
+
+	*pte = VMM_CREATE_TABLE_ENTRY(flags, paddr);
+
 	uint64_t* pde = vmm_get_pde(address);
-	if(pde != NULL)	
-		*pde = VMM_INC_ENTRY_LU(*pde);
+	*pde = VMM_INC_ENTRY_LU(*pde);
 }
 
 void vmm_free_pte(virt_addr_t address)
@@ -162,11 +176,20 @@ void vmm_set_pde(virt_addr_t address, uint64_t entry)
 	*pde = entry;
 }
 
-void vmm_alloc_pde(virt_addr_t address)
+void vmm_alloc_pde(virt_addr_t address, uint64_t flags)
 {
+	uint64_t* pde = vmm_get_pde(address);
+	if(pde == NULL)
+		return;
+
+	phys_addr_t paddr = pmm_alloc();
+	if(paddr == (phys_addr_t)-1)
+		return;
+
+	*pde = VMM_CREATE_TABLE_ENTRY(flags, paddr);
+
 	uint64_t* pdpe = vmm_get_pdpe(address);
-	if(pdpe != NULL)
-		*pdpe = VMM_INC_ENTRY_LU(*pdpe);
+	*pdpe = VMM_INC_ENTRY_LU(*pdpe);
 }
 
 void vmm_free_pde(virt_addr_t address)
@@ -241,8 +264,18 @@ void vmm_set_pdpe(virt_addr_t address, uint64_t entry)
 	*pdpe = entry;
 }
 
-void vmm_alloc_pdpe(virt_addr_t address)
+void vmm_alloc_pdpe(virt_addr_t address, uint64_t flags)
 {
+	uint64_t* pdpe = vmm_get_pdpe(address);
+	if(pdpe == NULL)
+		return;
+
+	phys_addr_t paddr = pmm_alloc();
+	if(paddr == (phys_addr_t)-1)
+		return;
+
+	*pdpe = VMM_CREATE_TABLE_ENTRY(flags, paddr);
+
 	uint64_t* pml4e = vmm_get_pml4e(address);
 	*pml4e = VMM_INC_ENTRY_LU(*pml4e);
 }
@@ -291,7 +324,7 @@ void vmm_free_pdpe(virt_addr_t address)
 	 */
 	*pml4e = VMM_DEC_ENTRY_LU(*pml4e);
 	if(VMM_GET_ENTRY_LU(*pml4e) == 0)
-		pmm_free(VMM_GET_ENTRY_TABLE(*pml4e));
+		vmm_free_pml4e(address);
 }
 
 uint64_t* vmm_get_pml4e(virt_addr_t address)
@@ -304,6 +337,23 @@ void vmm_set_pml4e(virt_addr_t address, uint64_t entry)
 {
 	int pml4e_index = VMM_VADDR_PML4E_IDX(address);
 	vmm_get_pml4()[pml4e_index] = entry;
+}
+
+void vmm_alloc_pml4e(virt_addr_t address, uint64_t flags)
+{
+	uint64_t* pml4e = vmm_get_pml4e(address);
+	
+	phys_addr_t paddr = pmm_alloc();
+	if(paddr == (phys_addr_t)-1)
+		return;
+	
+	*pml4e = VMM_CREATE_TABLE_ENTRY(flags, paddr);
+}
+
+void vmm_free_pml4e(virt_addr_t address)
+{
+	uint64_t* pml4e = vmm_get_pml4e(address);
+	pmm_free(VMM_GET_ENTRY_TABLE(*pml4e));
 }
 
 uint64_t* vmm_get_pml4()
