@@ -17,6 +17,24 @@
 
 #include "mm/vmm/vmm.h"
 
+int vmm_unmap_page(virt_addr_t address)
+{
+	virt_addr_t vaddr = ALIGN_DOWN(address, VMM_PAGE_SIZE);
+	return vmm_free_pte(vaddr);
+}
+
+int vmm_unmap_pages(virt_addr_t address, size_t count)
+{
+	virt_addr_t aligned = ALIGN_DOWN(address, VMM_PAGE_SIZE);
+	for(virt_addr_t vaddr = aligned; vaddr < aligned + count * VMM_PAGE_SIZE; vaddr += VMM_PAGE_SIZE)
+	{
+		int status = vmm_unmap_page(vaddr);
+		if(status != SUCCESS)
+			return status;
+	}
+	return SUCCESS;
+}
+
 int vmm_map_virtual_page(virt_addr_t address, uint64_t flags)
 {
 	phys_addr_t paddr = pmm_alloc();

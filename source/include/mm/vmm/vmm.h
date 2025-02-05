@@ -130,15 +130,15 @@ bool vmm_is_valid_entry(uint64_t entry);
 
 /* 
  * Unmaps a virtual address. 
- * Frees its corresponding physical address using the physical memory manager.
+ * Frees its corresponding physical address using the physical memory manager. Returns 0 on success, an error code otherwise.
  */
-void vmm_unmap_page(virt_addr_t address);
+int vmm_unmap_page(virt_addr_t address);
 
 /* 
  * Unmaps <count> pages of the given virtual address.
- * Frees their corresponding physical address using the physical memory manager. 
+ * Frees their corresponding physical address using the physical memory manager. Returns 0 on success, an error code otherwise.
  */
-void vmm_unmap_pages(virt_addr_t address, size_t count);
+int vmm_unmap_pages(virt_addr_t address, size_t count);
 
 /* Returns a pointer to the page table entry of a given virtual address. Will return null on failure. */
 uint64_t* vmm_get_pte(virt_addr_t address);
