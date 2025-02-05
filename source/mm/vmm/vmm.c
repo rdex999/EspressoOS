@@ -17,6 +17,18 @@
 
 #include "mm/vmm/vmm.h"
 
+bool vmm_is_free_page(virt_addr_t address)
+{
+	virt_addr_t vaddr = ALIGN_DOWN(address, VMM_PAGE_SIZE);
+
+	uint64_t* pte = vmm_get_pte(vaddr);
+	if(pte == NULL)
+		return true;
+
+	/* If this is a valid entry, it means its allocated. So invert the result of the function. (if not valid - return true) */
+	return !vmm_is_valid_entry(*pte);
+}
+
 int vmm_unmap_page(virt_addr_t address)
 {
 	virt_addr_t vaddr = ALIGN_DOWN(address, VMM_PAGE_SIZE);

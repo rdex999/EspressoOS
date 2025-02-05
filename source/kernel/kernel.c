@@ -50,7 +50,12 @@ void kernel_main(multiboot_info_t* mbd)
 	vmm_alloc_pte(virt + VMM_PAGE_SIZE*2, VMM_PAGE_P | VMM_PAGE_RW);
 	vmm_alloc_pte(virt + VMM_PAGE_SIZE*3, VMM_PAGE_P | VMM_PAGE_RW);
 
-	vmm_unmap_pages(virt, 4);
+	vmm_unmap_page(virt + VMM_PAGE_SIZE*1);
+
+	bool free0 = vmm_is_free_page(virt);						/* false */
+	bool free1 = vmm_is_free_page(virt + VMM_PAGE_SIZE*1);		/* true */
+	bool free2 = vmm_is_free_page(virt + VMM_PAGE_SIZE*2);		/* false */
+	bool free3 = vmm_is_free_page(virt + VMM_PAGE_SIZE*3);		/* false */
 
 	/* Will cause a page-fault. */
 	// *(int*)virt = 420;
