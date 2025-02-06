@@ -53,10 +53,10 @@ typedef uint64_t virt_addr_t;
 #define VMM_VADDR_PD_IDX(vaddr)				(((vaddr) >> 21) & 0x1FF)
 #define VMM_VADDR_PT_IDX(vaddr)				(((vaddr) >> 12) & 0x1FF)
 
-#define VMM_VADDR_SET_PT_IDX(vaddr, idx)	(((vaddr) & ~(0x1FF << 12)) | ((idx) & 1023))
-#define VMM_VADDR_SET_PD_IDX(vaddr, idx)	(((vaddr) & ~(0x1FF << 21)) | ((idx) & 1023))
-#define VMM_VADDR_SET_PDP_IDX(vaddr, idx)	(((vaddr) & ~(0x1FF << 30)) | ((idx) & 1023))
-#define VMM_VADDR_SET_PML4_IDX(vaddr, idx)	(((vaddr) & ~(0x1FF << 39)) | ((idx) & 1023))
+#define VMM_VADDR_SET_PT_IDX(vaddr, idx)	(((vaddr) & ~((virt_addr_t)0x1FF << 12)) | ((idx) & 1023))
+#define VMM_VADDR_SET_PD_IDX(vaddr, idx)	(((vaddr) & ~((virt_addr_t)0x1FF << 21)) | ((idx) & 1023))
+#define VMM_VADDR_SET_PDP_IDX(vaddr, idx)	(((vaddr) & ~((virt_addr_t)0x1FF << 30)) | ((idx) & 1023))
+#define VMM_VADDR_SET_PML4_IDX(vaddr, idx)	(((vaddr) & ~((virt_addr_t)0x1FF << 39)) | ((idx) & 1023))
 
 /* Get a pointer to the paging structure/physical block the entry points to. */
 #define VMM_GET_ENTRY_TABLE(entry) 					((entry) & 0x7FFFFFFFFF000)
@@ -87,19 +87,28 @@ typedef uint64_t virt_addr_t;
 /* Initialize the virtual memory manager */
 void vmm_init();
 
-/* Allocates a memory block of <VMM_PAGE_SIZE>, returns its virtual address. Returns null on failure. */
-virt_addr_t vmm_alloc_page();
+/* Allocates a memory block of <VMM_PAGE_SIZE>, returns its virtual address. Returns -1 on failure. */
+virt_addr_t vmm_alloc_page(uint64_t flags);
 
-/* Allocates <count> memory blocks of <VMM_PAGE_SIZE>, returns their virtual address. Returns null on failure. */
-virt_addr_t vmm_alloc_pages(size_t count);
+/* Allocates <count> memory blocks of <VMM_PAGE_SIZE>, returns their virtual address. Returns -1 on failure. */
+virt_addr_t vmm_alloc_pages(uint64_t flags, size_t count);
 
-/* Frees a memory block of <VMM_PAGE_SIZE>. */
-void vmm_free_page(virt_addr_t address);
+/* 
+ * Unmaps a virtual address. 
+ * Frees its corresponding physical address using the physical memory manager. Returns 0 on success, an error code otherwise.
+ */
+int vmm_unmap_page(virt_addr_t address);
 
-/* Frees <count> memory blocks of <VMM_PAGE_SIZE>. */
-void vmm_free_pages(virt_addr_t address, size_t count);
+/* 
+ * Unmaps <count> pages of the given virtual address.
+ * Frees their corresponding physical address using the physical memory manager. Returns 0 on success, an error code otherwise.
+ */
+int vmm_unmap_pages(virt_addr_t address, size_t count);
 
-/* Checks is the given virtual address is mapped to some physical address. Returns true if not mapped (free), false if mapped (not free). */
+/* 
+ * Checks is the given virtual address is mapped to some physical address. 
+ * Returns true if not mapped (free), false if mapped (not free). 
+ */
 bool vmm_is_free_page(virt_addr_t address);
 
 /*
@@ -127,18 +136,6 @@ int vmm_map_virtual_to_physical(virt_addr_t vaddr, phys_addr_t paddr, uint64_t f
  * meaning, if it points to a page table/physical block. Returns true if it does point to something, false otherwise.
  */
 bool vmm_is_valid_entry(uint64_t entry);
-
-/* 
- * Unmaps a virtual address. 
- * Frees its corresponding physical address using the physical memory manager. Returns 0 on success, an error code otherwise.
- */
-int vmm_unmap_page(virt_addr_t address);
-
-/* 
- * Unmaps <count> pages of the given virtual address.
- * Frees their corresponding physical address using the physical memory manager. Returns 0 on success, an error code otherwise.
- */
-int vmm_unmap_pages(virt_addr_t address, size_t count);
 
 /* Returns a pointer to the page table entry of a given virtual address. Will return null on failure. */
 uint64_t* vmm_get_pte(virt_addr_t address);

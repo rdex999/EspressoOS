@@ -17,6 +17,50 @@
 
 #include "mm/vmm/vmm.h"
 
+virt_addr_t vmm_alloc_page(uint64_t flags)
+{
+	return vmm_alloc_pages(flags, 1);
+}
+
+virt_addr_t vmm_alloc_pages(uint64_t flags, size_t count)
+{
+	if(count == 0)
+		return (virt_addr_t)-1;
+
+	for(virt_addr_t vaddr = 0; vaddr < (virt_addr_t)-1 - VMM_PAGE_SIZE; vaddr += VMM_PAGE_SIZE)
+	{
+		uint64_t* pde = vmm_get_pde(vaddr);
+		if(pde != NULL && VMM_GET_ENTRY_LU(*pde) >= VMM_PAGE_TABLE_LENGTH)
+		{
+			vaddr += (VMM_PAGE_TABLE_LENGTH - 1) * VMM_PAGE_SIZE;
+			continue;
+		}
+
+		if(!vmm_is_free_page(vaddr))
+			continue;
+	
+		size_t free_blocks = 0;	
+		for(virt_addr_t va = vaddr; free_blocks < count; va += VMM_PAGE_SIZE, ++free_blocks)
+		{
+			if(!vmm_is_free_page(va))
+				break;
+		}
+		if(free_blocks != count)
+		{
+			vaddr += (free_blocks - 1) * VMM_PAGE_SIZE;
+			continue;
+		}
+
+		int status = vmm_map_virtual_pages(vaddr, flags, count);
+		if(status != SUCCESS)
+			return (virt_addr_t)-1;
+		
+		return vaddr;
+	}
+
+	return (virt_addr_t)-1;
+}
+
 bool vmm_is_free_page(virt_addr_t address)
 {
 	virt_addr_t vaddr = ALIGN_DOWN(address, VMM_PAGE_SIZE);
