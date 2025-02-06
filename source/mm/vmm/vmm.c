@@ -25,6 +25,19 @@ int vmm_init()
 	if(g_pml4 == (uint64_t*)-1)
 		return ERR_OUT_OF_MEMORY;
 
+	/* Identity map kernel memory, including the physical memory manager's bitmap. (as its right after the kernel) */
+	int status = vmm_map_virtual_to_physical_pages(
+		0, 
+		0, 
+		VMM_PAGE_P | VMM_PAGE_RW, 
+		(uint64_t)PMM_BITMAP_END_ADDRESS / VMM_PAGE_SIZE
+	);
+
+	if(status != SUCCESS)
+		return status;
+	
+	write_cr3((uint64_t)g_pml4);
+
 	return SUCCESS;
 }
 
