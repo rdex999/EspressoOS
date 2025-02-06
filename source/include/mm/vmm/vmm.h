@@ -23,6 +23,8 @@
 #include <stdint.h>
 #include <stddef.h>
 
+extern uint64_t* g_pml4;
+
 typedef uint64_t virt_addr_t;
 
 #define VMM_PAGE_SIZE 					PMM_BLOCK_SIZE
@@ -84,8 +86,8 @@ typedef uint64_t virt_addr_t;
  * https://www.amd.com/content/dam/amd/en/documents/processor-tech-docs/programmer-references/24593.pdf
  */
 
-/* Initialize the virtual memory manager */
-void vmm_init();
+/* Initialize the virtual memory manager. Returns 0 on success, an error code otherwise. */
+int vmm_init();
 
 /* Allocates a memory block of <VMM_PAGE_SIZE>, returns its virtual address. Returns -1 on failure. */
 virt_addr_t vmm_alloc_page(uint64_t flags);
@@ -129,7 +131,14 @@ int vmm_map_virtual_pages(virt_addr_t address, uint64_t flags, size_t count);
  * Map a virtual address to a physical address, set the given flags for the lowest page table (only for the PTE). 
  * Uses the physical memory manager to allocate the physical address. Returns 0 on success, an error code otherwise.
  */
-int vmm_map_virtual_to_physical(virt_addr_t vaddr, phys_addr_t paddr, uint64_t flags);
+int vmm_map_virtual_to_physical_page(virt_addr_t vaddr, phys_addr_t paddr, uint64_t flags);
+
+/* 
+ * Map a <count> pages of a virtual address to a physical address, 
+ * set the given flags for the lowest page table (only for the PTE). 
+ * Uses the physical memory manager to allocate the physical addresses. Returns 0 on success, an error code otherwise.
+ */
+int vmm_map_virtual_to_physical_pages(virt_addr_t vaddr, phys_addr_t paddr, uint64_t flags, size_t count);
 
 /* 
  * Checks if the entry is valid.
@@ -184,9 +193,3 @@ int vmm_alloc_pml4e(virt_addr_t address, uint64_t flags);
 
 /* Frees the pml4 entry. */
 void vmm_free_pml4e(virt_addr_t address);
-
-/* Returns the address of the page map level 4 paging structure. (The value of the CR3 register) */
-uint64_t* vmm_get_pml4();
-
-/* Sets a new page map level 4 table. (the value of the CR3 register) */
-void vmm_set_pml4(uint64_t* pml4);

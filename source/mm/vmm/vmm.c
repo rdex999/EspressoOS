@@ -17,6 +17,17 @@
 
 #include "mm/vmm/vmm.h"
 
+uint64_t* g_pml4;
+
+int vmm_init()
+{
+	g_pml4 = (uint64_t*)pmm_alloc();
+	if(g_pml4 == (uint64_t*)-1)
+		return ERR_OUT_OF_MEMORY;
+
+	return SUCCESS;
+}
+
 virt_addr_t vmm_alloc_page(uint64_t flags)
 {
 	return vmm_alloc_pages(flags, 1);
@@ -98,7 +109,7 @@ int vmm_map_virtual_page(virt_addr_t address, uint64_t flags)
 		return ERR_OUT_OF_MEMORY;
 
 	virt_addr_t vaddr = ALIGN_DOWN(address, VMM_PAGE_SIZE);
-	int status = vmm_map_virtual_to_physical(vaddr, paddr, flags);
+	int status = vmm_map_virtual_to_physical_page(vaddr, paddr, flags);
 	if(status != SUCCESS)
 		return status;
 
@@ -117,7 +128,7 @@ int vmm_map_virtual_pages(virt_addr_t address, uint64_t flags, size_t count)
 	return SUCCESS;
 }
 
-int vmm_map_virtual_to_physical(virt_addr_t vaddr, phys_addr_t paddr, uint64_t flags)
+int vmm_map_virtual_to_physical_page(virt_addr_t vaddr, phys_addr_t paddr, uint64_t flags)
 {
 	uint64_t* pml4e = vmm_get_pml4e(vaddr);
 	if(!vmm_is_valid_entry(*pml4e))
@@ -143,6 +154,19 @@ int vmm_map_virtual_to_physical(virt_addr_t vaddr, phys_addr_t paddr, uint64_t f
 	*pte = VMM_CREATE_TABLE_ENTRY(flags, aligned_paddr);
 	*pde = VMM_INC_ENTRY_LU(*pde);
 
+	return SUCCESS;
+}
+
+int vmm_map_virtual_to_physical_pages(virt_addr_t vaddr, phys_addr_t paddr, uint64_t flags, size_t count)
+{
+	for(size_t block = 0; block < count; ++block)
+	{
+		virt_addr_t cvaddr = vaddr + block * VMM_PAGE_SIZE;
+		phys_addr_t cpaddr = paddr + block * VMM_PAGE_SIZE;
+		int status = vmm_map_virtual_to_physical_page(cvaddr, cpaddr, flags);
+		if(status != SUCCESS)
+			return status;
+	}
 	return SUCCESS;
 }
 
@@ -403,13 +427,13 @@ int vmm_free_pdpe(virt_addr_t address)
 uint64_t* vmm_get_pml4e(virt_addr_t address)
 {
 	int pml4e_index = VMM_VADDR_PML4E_IDX(address);
-	return &vmm_get_pml4()[pml4e_index];
+	return &g_pml4[pml4e_index];
 }
 
 void vmm_set_pml4e(virt_addr_t address, uint64_t entry)
 {
 	int pml4e_index = VMM_VADDR_PML4E_IDX(address);
-	vmm_get_pml4()[pml4e_index] = entry;
+	g_pml4[pml4e_index] = entry;
 }
 
 int vmm_alloc_pml4e(virt_addr_t address, uint64_t flags)
@@ -431,12 +455,3 @@ void vmm_free_pml4e(virt_addr_t address)
 	pmm_free(VMM_GET_ENTRY_TABLE(*pml4e));
 }
 
-uint64_t* vmm_get_pml4()
-{
-	return (uint64_t*)read_cr3();
-}
-
-void vmm_set_pml4(uint64_t* pml4)
-{
-	write_cr3((uint64_t)pml4);
-}
