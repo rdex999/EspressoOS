@@ -232,7 +232,7 @@ uint64_t *vmm_get_pte(virt_addr_t address)
 	if(pde == NULL)
 		return NULL;
 
-	uint64_t* pt = (uint64_t*)VMM_GET_ENTRY_TABLE(*pde);
+	uint64_t* pt = vmm_get_sub_table(*pde);
 	if(pt == NULL)
 		return NULL;
 
@@ -248,6 +248,7 @@ void vmm_set_pte(virt_addr_t address, uint64_t entry)
 		return;
 	
 	*pte = entry;
+	vmm_set_virtual_of(VMM_GET_ENTRY_TABLE(entry), address);
 }
 
 int vmm_alloc_pte(virt_addr_t address, uint64_t flags)
@@ -261,6 +262,7 @@ int vmm_alloc_pte(virt_addr_t address, uint64_t flags)
 		return ERR_OUT_OF_MEMORY;
 
 	*pte = VMM_CREATE_TABLE_ENTRY(flags, paddr);
+	vmm_set_virtual_of(paddr, address);
 
 	uint64_t* pde = vmm_get_pde(address);
 	*pde = VMM_INC_ENTRY_LU(*pde);
@@ -298,7 +300,7 @@ uint64_t* vmm_get_pde(virt_addr_t address)
 	if(pdpe == NULL)
 		return NULL;
 	
-	uint64_t* pd = (uint64_t*)VMM_GET_ENTRY_TABLE(*pdpe);
+	uint64_t* pd = vmm_get_sub_table(*pdpe);
 	if(pd == NULL)
 		return NULL;
 	
@@ -351,7 +353,7 @@ int vmm_free_pde(virt_addr_t address)
 	 */
 	int pt_to_free_count = VMM_GET_ENTRY_LU(*pde);
 	*pde = VMM_SET_ENTRY_LU(*pde, (size_t)1023);
-	uint64_t* pt = (uint64_t*)VMM_GET_ENTRY_TABLE(*pde);
+	uint64_t* pt = vmm_get_sub_table(*pde);
 	for(int i = 0; i < VMM_PAGE_TABLE_LENGTH; ++i)
 	{
 		/* 
@@ -390,7 +392,7 @@ uint64_t* vmm_get_pdpe(virt_addr_t address)
 	if(pml4e == NULL)
 		return NULL;
 
-	uint64_t* pdp = (uint64_t*)VMM_GET_ENTRY_TABLE(*pml4e);
+	uint64_t* pdp = vmm_get_sub_table(*pml4e);
 	if(pdp == NULL)
 		return NULL;
 
@@ -442,7 +444,7 @@ int vmm_free_pdpe(virt_addr_t address)
 	 */
 	int pd_to_free_count = VMM_GET_ENTRY_LU(*pdpe);
 	*pdpe = VMM_SET_ENTRY_LU(*pdpe, (size_t)1023);
-	uint64_t* pd = (uint64_t*)VMM_GET_ENTRY_TABLE(*pdpe);
+	uint64_t* pd = vmm_get_sub_table(*pdpe);
 	for(int i = 0; i < VMM_PAGE_TABLE_LENGTH; ++i)
 	{
 		/* 
