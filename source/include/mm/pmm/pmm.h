@@ -38,6 +38,7 @@ typedef uint64_t phys_addr_t;
 #define PMM_BITMAP_LENGTH 			(PMM_BITMAP_SIZE / PMM_BITMAP_BYTES_IN_ENTRY)	/* The length of the bitmap in entries. */
 
 /* Dont cancle me for using globals, there isnt realy a better way for doing this */
+extern size_t g_pmm_mmap_blocks;		/* The total amount of memory from the memory map, including memory-mapped devices. */
 extern size_t g_pmm_total_blocks;		/* The total amount of memory blocks in ram */
 extern size_t g_pmm_free_blocks;		/* The amount of blocks that are currently free */
 extern size_t g_pmm_used_blocks;		/* The amount of blocks that are currently used */

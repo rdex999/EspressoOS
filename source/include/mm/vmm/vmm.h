@@ -27,8 +27,18 @@ extern uint64_t* g_pml4;
 
 typedef uint64_t virt_addr_t;
 
-#define VMM_PAGE_SIZE 					PMM_BLOCK_SIZE
-#define VMM_PAGE_TABLE_LENGTH 			512
+#define VMM_PAGE_SIZE 				PMM_BLOCK_SIZE
+#define VMM_PAGE_TABLE_LENGTH 		512
+
+/* 
+ * Reverse memory mapping. Maps physical memory to virtual memory, using 4KiB memory blocks.
+ * For example, to get the virtual address of 0x13000, take its block number (0x13000 / 4096) = 0x13 = 19 and use it in the map.
+ * virt_addr_t vaddr = VMM_REVERSE_MAP[0x13000 / VMM_PAGE_SIZE];
+ */
+#define VMM_REVERSE_MAP				((virt_addr_t*)PMM_BITMAP_END_ADDRESS)	
+#define VMM_REVERSE_MAP_LENGTH		((g_pmm_mmap_blocks / VMM_PAGE_SIZE) * sizeof(virt_addr_t))
+#define VMM_REVERSE_MAP_SIZE		(VMM_REVERSE_MAP_LENGTH * sizeof(virt_addr_t))
+#define VMM_REVERSE_MAP_END			(VMM_REVERSE_MAP + VMM_REVERSE_MAP_LENGTH)
 
 /* 
  * Page entry flags, for detailes (future me who forgets all of that) 
@@ -107,6 +117,14 @@ int vmm_unmap_page(virt_addr_t address);
  */
 int vmm_unmap_pages(virt_addr_t address, size_t count);
 
+/* Returns the physical address of the given virtual address. Returns -1 on failure. */
+phys_addr_t vmm_get_physical_of(virt_addr_t address);
+
+/* Returns the virtual address of the given physical address. Returns -1 on failure. */
+virt_addr_t vmm_get_virtual_of(phys_addr_t address);
+
+void vmm_set_virtual_of(phys_addr_t paddr, virt_addr_t vaddr);
+
 /* 
  * Checks is the given virtual address is mapped to some physical address. 
  * Returns true if not mapped (free), false if mapped (not free). 
@@ -145,6 +163,12 @@ int vmm_map_virtual_to_physical_pages(virt_addr_t vaddr, phys_addr_t paddr, uint
  * meaning, if it points to a page table/physical block. Returns true if it does point to something, false otherwise.
  */
 bool vmm_is_valid_entry(uint64_t entry);
+
+/* 
+ * From a given paging entry (pde, pdpe, pml4e), returns a pointer to its sub table. 
+ * For a pte, the function will return a virtual address, which represents the physical block the pte points to.
+ */
+uint64_t* vmm_get_sub_table(uint64_t entry);
 
 /* Returns a pointer to the page table entry of a given virtual address. Will return null on failure. */
 uint64_t* vmm_get_pte(virt_addr_t address);

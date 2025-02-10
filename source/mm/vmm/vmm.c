@@ -21,16 +21,19 @@ uint64_t* g_pml4;
 
 int vmm_init()
 {
+	/* Allocate the physical memory of the kernel, including the reverse mapping. */
+	pmm_alloc_address(0, (size_t)VMM_REVERSE_MAP_END / PMM_BLOCK_SIZE);
+
 	g_pml4 = (uint64_t*)pmm_alloc();
 	if(g_pml4 == (uint64_t*)-1)
 		return ERR_OUT_OF_MEMORY;
 
-	/* Identity map kernel memory, including the physical memory manager's bitmap. (as its right after the kernel) */
+	/* Identity map kernel memory, including the reverse memory map */
 	int status = vmm_map_virtual_to_physical_pages(
 		0, 
 		0, 
-		VMM_PAGE_P | VMM_PAGE_RW, 
-		(uint64_t)PMM_BITMAP_END_ADDRESS / VMM_PAGE_SIZE
+		VMM_PAGE_P | VMM_PAGE_RW,
+		VMM_REVERSE_MAP_SIZE / VMM_PAGE_SIZE
 	);
 
 	if(status != SUCCESS)
@@ -85,18 +88,6 @@ virt_addr_t vmm_alloc_pages(uint64_t flags, size_t count)
 	return (virt_addr_t)-1;
 }
 
-bool vmm_is_free_page(virt_addr_t address)
-{
-	virt_addr_t vaddr = ALIGN_DOWN(address, VMM_PAGE_SIZE);
-
-	uint64_t* pte = vmm_get_pte(vaddr);
-	if(pte == NULL)
-		return true;
-
-	/* If this is a valid entry, it means its allocated. So invert the result of the function. (if not valid - return true) */
-	return !vmm_is_valid_entry(*pte);
-}
-
 int vmm_unmap_page(virt_addr_t address)
 {
 	virt_addr_t vaddr = ALIGN_DOWN(address, VMM_PAGE_SIZE);
@@ -113,6 +104,47 @@ int vmm_unmap_pages(virt_addr_t address, size_t count)
 			return status;
 	}
 	return SUCCESS;
+}
+
+phys_addr_t vmm_get_physical_of(virt_addr_t address)
+{
+	virt_addr_t aligned = ALIGN_DOWN(address, VMM_PAGE_SIZE);
+	uint64_t* pte = vmm_get_pte(aligned);
+	if(pte == NULL)
+		return (phys_addr_t)-1;
+	
+	return VMM_GET_ENTRY_TABLE(*pte) + (address - aligned);
+}
+
+virt_addr_t vmm_get_virtual_of(phys_addr_t address)
+{
+	size_t block = address / VMM_PAGE_SIZE;
+	if(block >= VMM_REVERSE_MAP_LENGTH)
+		return (virt_addr_t)-1;
+
+	return VMM_REVERSE_MAP[block] + address % VMM_PAGE_SIZE;
+}
+
+void vmm_set_virtual_of(phys_addr_t paddr, virt_addr_t vaddr)
+{
+	virt_addr_t alg_vaddr = ALIGN_DOWN(vaddr, VMM_PAGE_SIZE);
+	size_t index = paddr / VMM_PAGE_SIZE;
+	if(index >= VMM_REVERSE_MAP_LENGTH)
+		return;
+	
+	VMM_REVERSE_MAP[index] = alg_vaddr;
+}
+
+bool vmm_is_free_page(virt_addr_t address)
+{
+	virt_addr_t vaddr = ALIGN_DOWN(address, VMM_PAGE_SIZE);
+
+	uint64_t* pte = vmm_get_pte(vaddr);
+	if(pte == NULL)
+		return true;
+
+	/* If this is a valid entry, it means its allocated. So invert the result of the function. (if not valid - return true) */
+	return !vmm_is_valid_entry(*pte);
 }
 
 int vmm_map_virtual_page(virt_addr_t address, uint64_t flags)
@@ -188,6 +220,12 @@ bool vmm_is_valid_entry(uint64_t entry)
 	return entry & VMM_PAGE_P;
 }
 
+uint64_t* vmm_get_sub_table(uint64_t entry)
+{
+	phys_addr_t address = VMM_GET_ENTRY_TABLE(entry);
+	return (uint64_t*)vmm_get_virtual_of(address);
+}
+
 uint64_t *vmm_get_pte(virt_addr_t address) 
 {
 	uint64_t* pde = vmm_get_pde(address);
@@ -210,21 +248,6 @@ void vmm_set_pte(virt_addr_t address, uint64_t entry)
 		return;
 	
 	*pte = entry;
-}
-
-uint64_t* vmm_get_pde(virt_addr_t address)
-{
-	uint64_t* pdpe = vmm_get_pdpe(address);
-	if(pdpe == NULL)
-		return NULL;
-	
-	uint64_t* pd = (uint64_t*)VMM_GET_ENTRY_TABLE(*pdpe);
-	if(pd == NULL)
-		return NULL;
-	
-	size_t pde_index = VMM_VADDR_PD_IDX(address);
-
-	return &pd[pde_index];
 }
 
 int vmm_alloc_pte(virt_addr_t address, uint64_t flags)
@@ -267,6 +290,21 @@ int vmm_free_pte(virt_addr_t address)
 		vmm_free_pde(address);
 
 	return SUCCESS;
+}
+
+uint64_t* vmm_get_pde(virt_addr_t address)
+{
+	uint64_t* pdpe = vmm_get_pdpe(address);
+	if(pdpe == NULL)
+		return NULL;
+	
+	uint64_t* pd = (uint64_t*)VMM_GET_ENTRY_TABLE(*pdpe);
+	if(pd == NULL)
+		return NULL;
+	
+	size_t pde_index = VMM_VADDR_PD_IDX(address);
+
+	return &pd[pde_index];
 }
 
 void vmm_set_pde(virt_addr_t address, uint64_t entry)

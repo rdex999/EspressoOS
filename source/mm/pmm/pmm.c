@@ -18,6 +18,7 @@
 #include "mm/pmm/pmm.h"
 
 /* A value of -1 indicates these are uninitialized. pmm_init() Should initialize them */
+size_t g_pmm_mmap_blocks	= -1;
 size_t g_pmm_total_blocks	= -1;
 size_t g_pmm_free_blocks 	= -1;
 size_t g_pmm_used_blocks 	= -1;
@@ -32,11 +33,13 @@ void pmm_init(multiboot_tag_mmap_t* mmap)
 	 * <total_available_ram> Will represent the total amount of available ram in bytes.
 	 */
 
+	size_t total_mmap_memory = 0;
 	size_t total_available_ram = 0;
 	phys_addr_t highest_available_memory = 0;
 	for(size_t i = 0; i < mmap->entries_length(); ++i)
 	{
 		multiboot_mmap_entry_t* entry = mmap->index(i);
+		total_mmap_memory += entry->len;
 
 		if(entry->type == MULTIBOOT_MEMORY_AVAILABLE)
 		{
@@ -46,15 +49,13 @@ void pmm_init(multiboot_tag_mmap_t* mmap)
 				highest_available_memory = entry->addr + entry->len;
 		}
 	}
+	g_pmm_mmap_blocks = total_mmap_memory / PMM_BLOCK_SIZE;
 	g_pmm_total_blocks = highest_available_memory / PMM_BLOCK_SIZE;
 	g_pmm_free_blocks = total_available_ram / PMM_BLOCK_SIZE;
 	g_pmm_used_blocks = 0;
 
 	/* Initialize the bitmap to all zeros */
 	memset(PMM_BITMAP, 0, PMM_BITMAP_SIZE);
-
-	/* Mark kernel (including the bitmap) memory as used. */
-	pmm_alloc_address(0, DIV_ROUND_UP((size_t)KERNEL_END + PMM_BITMAP_SIZE, PMM_BLOCK_SIZE));
 
 	/* Mark unavailable blocks as used */
 	for(size_t i = 0; i < mmap->entries_length(); ++i)
