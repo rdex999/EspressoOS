@@ -51,6 +51,47 @@ virt_addr_t vmm_alloc_page(uint64_t flags)
 
 virt_addr_t vmm_alloc_pages(uint64_t flags, size_t count)
 {
+	virt_addr_t address = vmm_find_free_pages(count);
+	if(address == (virt_addr_t)-1)
+		return ERR_OUT_OF_MEMORY;
+
+	int status = vmm_map_virtual_pages(address, flags, count);
+	if(status != SUCCESS)
+		return (virt_addr_t)-1;
+	
+	return address;
+}
+
+int vmm_unmap_page(virt_addr_t address)
+{
+	virt_addr_t vaddr = ALIGN_DOWN(address, VMM_PAGE_SIZE);
+	return vmm_free_pte(vaddr);
+}
+
+int vmm_unmap_pages(virt_addr_t address, size_t count)
+{
+	virt_addr_t aligned = ALIGN_DOWN(address, VMM_PAGE_SIZE);
+	for(virt_addr_t vaddr = aligned; vaddr < aligned + count * VMM_PAGE_SIZE; vaddr += VMM_PAGE_SIZE)
+	{
+		int status = vmm_unmap_page(vaddr);
+		if(status != SUCCESS)
+			return status;
+	}
+	return SUCCESS;
+}
+
+virt_addr_t vmm_find_free_page()
+{
+	return vmm_find_free_pages(1llu);
+}
+
+virt_addr_t vmm_find_free_pages(size_t count)
+{
+	/* 
+	 * Ok now hear me out - I know its a shitty algorithem (traveling the whole paging structure), 
+	 * i will use some kind of data structure for managing free pages in the future.
+	 */
+
 	if(count == 0)
 		return (virt_addr_t)-1;
 
@@ -77,33 +118,11 @@ virt_addr_t vmm_alloc_pages(uint64_t flags, size_t count)
 			vaddr += (free_blocks - 1) * VMM_PAGE_SIZE;
 			continue;
 		}
-
-		int status = vmm_map_virtual_pages(vaddr, flags, count);
-		if(status != SUCCESS)
-			return (virt_addr_t)-1;
 		
 		return vaddr;
 	}
 
 	return (virt_addr_t)-1;
-}
-
-int vmm_unmap_page(virt_addr_t address)
-{
-	virt_addr_t vaddr = ALIGN_DOWN(address, VMM_PAGE_SIZE);
-	return vmm_free_pte(vaddr);
-}
-
-int vmm_unmap_pages(virt_addr_t address, size_t count)
-{
-	virt_addr_t aligned = ALIGN_DOWN(address, VMM_PAGE_SIZE);
-	for(virt_addr_t vaddr = aligned; vaddr < aligned + count * VMM_PAGE_SIZE; vaddr += VMM_PAGE_SIZE)
-	{
-		int status = vmm_unmap_page(vaddr);
-		if(status != SUCCESS)
-			return status;
-	}
-	return SUCCESS;
 }
 
 phys_addr_t vmm_get_physical_of(virt_addr_t address)

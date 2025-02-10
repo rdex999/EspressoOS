@@ -117,6 +117,12 @@ int vmm_unmap_page(virt_addr_t address);
  */
 int vmm_unmap_pages(virt_addr_t address, size_t count);
 
+/* Find a free page, meaning, a free virtual address of VMM_PAGE_SIZE bytes. Returns -1 on failure. */
+virt_addr_t vmm_find_free_page();
+
+/* Find <count> free pages, meaning, a free virtual address of VMM_PAGE_SIZE*<count> bytes. Returns -1 on failure. */
+virt_addr_t vmm_find_free_pages(size_t count);
+
 /* Returns the physical address of the given virtual address. Returns -1 on failure. */
 phys_addr_t vmm_get_physical_of(virt_addr_t address);
 
