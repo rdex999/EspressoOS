@@ -192,6 +192,24 @@ int vmm_map_virtual_pages(virt_addr_t address, uint64_t flags, size_t count)
 	return SUCCESS;
 }
 
+virt_addr_t vmm_map_physical_page(phys_addr_t address, uint64_t flags)
+{
+	return vmm_map_physical_pages(address, flags, (size_t)1);
+}
+
+virt_addr_t vmm_map_physical_pages(phys_addr_t address, uint64_t flags, size_t count)
+{
+	virt_addr_t vaddr = vmm_find_free_pages(count);
+	if(vaddr == (virt_addr_t)-1)
+		return (virt_addr_t)-1;
+
+	int status = vmm_map_virtual_to_physical_pages(vaddr, address, flags, count);
+	if(status != SUCCESS)
+		return (virt_addr_t)-1;
+	
+	return vaddr;
+}
+
 int vmm_map_virtual_to_physical_page(virt_addr_t vaddr, phys_addr_t paddr, uint64_t flags)
 {
 	uint64_t* pml4e = vmm_get_pml4e(vaddr);

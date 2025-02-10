@@ -151,6 +151,12 @@ int vmm_map_virtual_page(virt_addr_t address, uint64_t flags);
  */
 int vmm_map_virtual_pages(virt_addr_t address, uint64_t flags, size_t count);
 
+/* Maps the physical address <address> to some virtual address. Returns the virtual address, or -1 on failure. */
+virt_addr_t vmm_map_physical_page(phys_addr_t address, uint64_t flags);
+
+/* Maps <count> block of the physical address <address> to some virtual address. Returns the virtual address, or -1 on failure. */
+virt_addr_t vmm_map_physical_pages(phys_addr_t address, uint64_t flags, size_t count);
+
 /* 
  * Map a virtual address to a physical address, set the given flags for the lowest page table (only for the PTE). 
  * Uses the physical memory manager to allocate the physical address. Returns 0 on success, an error code otherwise.
