@@ -19,10 +19,17 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <string.h>
+#include "common.h"
+
+typedef uint64_t bitmap_entry_t;
+
+#define BITMAP_ENTRY_BITS (sizeof(bitmap_entry_t) * 8)
 
 class bitmap
 {
 public:
+	/* Initializes the bitmap, clears all bits. Note: <size> is the size of the bitmap in bytes. */
 	bitmap(void* buffer, size_t size);
 
 	/* Set a single bit in the bitmap, or <count> bits starting from <index> */
@@ -41,10 +48,17 @@ public:
 	size_t find_clear() const;
 	size_t find_clear(size_t count) const;
 
+	inline size_t set_count() const;
+	inline size_t clear_count() const;
+
 private:
 	/* Find the first clear bit starting from <index>. */	
-	size_t find_clear_from(size_t index);
+	size_t find_clear_from(size_t index) const;
 
-	uint64_t* buffer;
-	size_t size;
+	bitmap_entry_t* const m_buffer;
+	const size_t m_size;
+	const size_t m_bit_count;
+
+	size_t m_clear;
+	size_t m_set;
 };

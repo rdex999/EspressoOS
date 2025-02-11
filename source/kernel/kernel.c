@@ -21,6 +21,8 @@
 #include "mm/pmm/pmm.h"
 #include "mm/vmm/vmm.h"
 
+#include "ds/bitmap.h"
+
 #define VIDEO ((uint32_t*)0xA0000)
 
 #ifdef __cplusplus
@@ -40,6 +42,11 @@ void kernel_main(multiboot_info_t* mbd)
 
 	pmm_init(mmap);
 	vmm_init();
+
+	bitmap_entry_t buffer[20];
+	bitmap bm = bitmap(buffer, sizeof(buffer));
+
+	bm.set(3, 140);
 
 	while(1)
 	{
