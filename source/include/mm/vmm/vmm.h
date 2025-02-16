@@ -199,6 +199,12 @@ virt_addr_t vmm_alloc_virtual_page();
 /* Find <count> free virtual pages in the alloc map, and mark them as allocated. */
 virt_addr_t vmm_alloc_virtual_pages(size_t count);
 
+/* Mark page <address> as free in the allocation map (bitmap) */
+void vmm_mark_free_virtual_page(virt_addr_t address);
+
+/* Mark <count> pages starting from <address> as free in the allocation map (bitmap) */
+void vmm_mark_free_virtual_pages(virt_addr_t address, size_t count);
+
 /* Converts a block (index in the bitmap) to its virtual address. */
 virt_addr_t vmm_block_to_address(size_t block);
 

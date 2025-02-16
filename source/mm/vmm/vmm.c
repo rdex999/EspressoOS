@@ -331,6 +331,18 @@ virt_addr_t vmm_alloc_virtual_pages(size_t count)
 	return vmm_block_to_address(block);
 }
 
+void vmm_mark_free_virtual_page(virt_addr_t address)
+{
+	size_t block = vmm_address_to_block(address);
+	g_vmm_alloc_map.free(block);
+}
+
+void vmm_mark_free_virtual_pages(virt_addr_t address, size_t count)
+{
+	size_t block = vmm_address_to_block(address);
+	g_vmm_alloc_map.free(block, count);
+}
+
 virt_addr_t vmm_block_to_address(size_t block)
 {
 	return block * VMM_PAGE_SIZE;
