@@ -26,32 +26,43 @@ SECTIONS
 	. = 1M;
 
 	# First, put everything from the .multiboot2 setion. It containes the multiboot2 header and tags.
-	.boot : { KEEP(*(.multiboot2)) }
+	.boot : { KEEP(*(.multiboot2)) } :text
 
 	# set _text to the .text sections start address.
 	_text = .;
 
 	# All code goes next, after the multiboot2 header
-	.text : { *(.text) }
+	.text : { *(.text) } :text
 
 	# Set _etext to the .text section end address
 	_etext = .;
 
 	# After the code, put all data here (.data section)
-	.data : { *(.data) }
+	.data : { *(.data) } :data
 
 	# Also needed, "rodata" stands for Read Only Data
-	.rodata : { *(.rodata) }
+	.rodata : { *(.rodata) } :rodata
 
 	# Set _edata to the data sections end address
 	_edata = .;
 
 	# Next put the .bss section, its basically the same as the data section but its used  more for global variables and stuff.
-	.bss : { *(.bss) }
+	.bss : { *(.bss) } :bss
 
 	# Set _ebss to the .bss section end address.
 	_ebss = .;
 
 	# Set _kernel_end to the kernels end address.
 	_kernel_end = .;
+}
+
+# The "PHDRS" command defines program headers with specific permissions.
+# The ":phdr" (:text for example) syntax associates sections with these headers (which have the permissions).
+# This is done so the linker wont print a warning saying the kernel has a LOAD segment with RWX permissions.
+PHDRS
+{
+	text 	PT_LOAD FLAGS(READ | EXECUTE);
+	data 	PT_LOAD FLAGS(READ | WRITE);
+	rodata 	PT_LOAD FLAGS(READ);
+	bss 	PT_LOAD FLAGS(READ | WRITE);
 }

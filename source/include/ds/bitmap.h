@@ -51,10 +51,10 @@ public:
 	inline size_t set_count() const;
 	inline size_t clear_count() const;
 
+private:
 	/* Find the first clear bit starting from <index>. */	
 	size_t find_clear_from(size_t index) const;
 	
-private:
 	bitmap_entry_t* const m_buffer;
 	const size_t m_size;
 	const size_t m_bit_count;

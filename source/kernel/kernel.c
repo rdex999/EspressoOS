@@ -48,7 +48,6 @@ void kernel_main(multiboot_info_t* mbd)
 
 	bm.set(0, 64*3);
 	bm.clear(3, 140);
-	size_t c = bm.find_clear_from(140+3);
 
 	while(1)
 	{
