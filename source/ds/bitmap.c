@@ -49,9 +49,8 @@ void bitmap::set(size_t index, size_t count)
 	if(index + count > m_bit_count)
 		return;
 
-	/* TODO: Implement is_set(..) */
-	// if(is_set(index, count))
-	// 	return;
+	if(!is_clear(index, count))								/* If there is at least on set bit, return. */
+		return;
 
 	size_t entry_index = index / BITMAP_ENTRY_BITS;			/* The entry index for <index> in the bitmap */
 	int bit_offset = index % BITMAP_ENTRY_BITS;				/* The bit offset in <entry_index> for the first bit to set */
@@ -123,9 +122,8 @@ void bitmap::clear(size_t index, size_t count)
 	if(index + count > m_bit_count)
 		return;
 
-	/* TODO: Implement is_clear(..) */
-	// if(is_clear(index, count))
-	// 	return;
+	if(is_clear(index, count))
+		return;
 
 	size_t entry_index = index / BITMAP_ENTRY_BITS;			/* The entry index for <index> in the bitmap */
 	int bit_offset = index % BITMAP_ENTRY_BITS;				/* The bit offset in <entry_index> for the first bit to clear */
@@ -239,4 +237,48 @@ bool bitmap::is_clear(size_t index, size_t count) const
 			return false;
 	
 	return true;
+}
+
+size_t bitmap::find_clear_from(size_t index) const
+{
+	if(index >= m_bit_count)
+		return -1;
+
+	if(m_clear == 0)
+		return -1;
+
+	size_t entry_index = index / BITMAP_ENTRY_BITS;
+	size_t bit_offset = index % BITMAP_ENTRY_BITS;
+
+	/* 
+	 * If <index> is not aligned to a bitmap entry, manualy check the first entry for clear bits. 
+	 * If it has a clear bit, return its bit index. If not, proceed and loop over the entries.
+	 */
+	if(bit_offset != 0)
+	{
+		bitmap_entry_t first = m_buffer[entry_index] | ((1llu << bit_offset) - 1llu);
+		if(first != (bitmap_entry_t)-1)
+		{
+			size_t offset = __builtin_ffsll(~first) - 1;	/* ffsll counts from 1, so subtract 1 */
+			return entry_index * BITMAP_ENTRY_BITS + offset;
+		}
+		++entry_index;
+	}
+
+	for(size_t i = entry_index; i < m_size / sizeof(bitmap_entry_t); ++i)
+	{
+		if (m_buffer[i] != -1llu)
+		{
+			/* 
+			 * The __builtin_ffsll function performs the BSF (byte scan forward) instruction, 
+			 * which finds the index of the first set bit. However, __builtin_ffsll increases the result of BSF by 1
+			 * so we need to subtract 1 to get the bit index.
+			 * Here we find the first bit that is set in the result of the bitwise NOT operation on the bitmap entry.
+			 * (Which is, the first cleared bit in the bitmap entry)
+			 */
+			size_t offset = __builtin_ffsll(~m_buffer[i]) - 1;	/* ffsll counts from 1, so subtract 1 */
+			return i * BITMAP_ENTRY_BITS + offset;
+		}
+	}
+	return -1;
 }
