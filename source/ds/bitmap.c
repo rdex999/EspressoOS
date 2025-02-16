@@ -239,6 +239,24 @@ bool bitmap::is_clear(size_t index, size_t count) const
 	return true;
 }
 
+size_t bitmap::find_clear() const
+{
+	return find_clear_from(0);
+}
+
+size_t bitmap::find_clear(size_t count) const
+{
+	size_t index = find_clear_from(0);
+	while(index != (size_t)-1)
+	{
+		if(is_clear(index, count))
+			return index;
+
+		index = find_clear_from(index + count);
+	}
+	return -1;
+}
+
 size_t bitmap::find_clear_from(size_t index) const
 {
 	if(index >= m_bit_count)

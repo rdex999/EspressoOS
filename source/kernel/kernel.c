@@ -47,7 +47,8 @@ void kernel_main(multiboot_info_t* mbd)
 	bitmap bm = bitmap(buffer, sizeof(buffer));
 
 	bm.set(0, 64*3);
-	bm.clear(3, 140);
+	bm.clear(3, 4);
+	size_t i = bm.find_clear(5);
 
 	while(1)
 	{
