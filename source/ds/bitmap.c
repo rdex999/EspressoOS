@@ -178,3 +178,65 @@ bool bitmap::is_clear(size_t index) const
 	size_t entry_offset = index % BITMAP_ENTRY_BITS;
 	return (m_buffer[entry_idx] & ((bitmap_entry_t)1 << entry_offset)) == (bitmap_entry_t)0;
 }
+
+bool bitmap::is_clear(size_t index, size_t count) const
+{
+	/* 
+	 * This function has 4 steps (very similar to bitmap::set(size_t index, size_t count))
+	 * 	- 1 => Check if <index> and <count> both start and end at an entry index, if so, use full entry checks (uint64_t).
+	 *	- 2 => Check the bits in the first entry, so <index> will be aligned to a bitmap entry. 
+	 * 		   (If count is greater than the amount of bits left in the entry, check the bits left in the entry)
+	 *	- 3 => Check if we can use full entry checks to check full bitmap entries.
+	 *	- 4 => Check the unaligned bits in the last entry, as they were not checked in the full entry loops.
+	 */
+
+	if(index + count > m_bit_count)
+		return false;
+
+	size_t entry_index = index / BITMAP_ENTRY_BITS;		/* The entry index for <index> in the bitmap */
+	int bit_offset = index % BITMAP_ENTRY_BITS;			/* The bit offset in <entry_index> for the first bit to check */
+	
+	size_t full_entries = count / BITMAP_ENTRY_BITS;	/* The amount of full entries we can check using full entry checks. */
+	if(bit_offset == 0 && full_entries > 0)
+	{
+		for(size_t i = 0; i < full_entries; ++i)
+			if(m_buffer[entry_index + i] != 0)
+				return false;
+		
+		entry_index += full_entries;
+		count -= full_entries * BITMAP_ENTRY_BITS;
+		index += full_entries * BITMAP_ENTRY_BITS;
+	} else
+	{
+		size_t first_entry_blocks = MIN(BITMAP_ENTRY_BITS - bit_offset, count);
+		if((m_buffer[entry_index] & (((1llu << first_entry_blocks) - 1) << bit_offset)) != 0)
+			return false;
+
+		++entry_index;
+		count -= first_entry_blocks;
+		index += first_entry_blocks;
+	}
+
+	/* 
+	 * Here, we know the <index> will be aligned to an entry in the bitmap. 
+	 * Also, if count is zero, the rest of the code wont have any effect.
+	 */
+
+	full_entries = count / BITMAP_ENTRY_BITS;
+	if(full_entries > 0)
+	{
+		for(size_t i = 0; i < full_entries; ++i)
+			if(m_buffer[entry_index + i] != 0)
+				return false;
+		
+		entry_index += full_entries;
+		count -= full_entries * BITMAP_ENTRY_BITS;
+		index += full_entries * BITMAP_ENTRY_BITS;
+	}
+
+	if(count > 0)
+		if((m_buffer[entry_index] & ((1llu << count) - 1)) != 0)
+			return false;
+	
+	return true;
+}

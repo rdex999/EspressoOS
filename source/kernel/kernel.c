@@ -48,6 +48,7 @@ void kernel_main(multiboot_info_t* mbd)
 
 	bm.set(0, 64*3);
 	bm.clear(3, 140);
+	bool ic = bm.is_clear(3, 141);
 
 	while(1)
 	{
