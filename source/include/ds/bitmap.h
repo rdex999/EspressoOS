@@ -45,9 +45,18 @@ public:
 	bool is_clear(size_t index, size_t count) const;
 
 	/*  Get the index of the first clear bit, or get the index of the first <count> clear bits. */
-	size_t find_clear() const;
+	inline size_t find_clear() const;
 	size_t find_clear(size_t count) const;
 
+	/* Find a clear bit (or <count> bits) and set it to 1. Returns the index of the first allocated bit. */
+	size_t allocate();
+	size_t allocate(size_t count);
+
+	/* Clear bit <index>, or clear <count> bits starting from <index>. */
+	inline void free(size_t index);
+	inline void free(size_t index, size_t count);
+
+	/* Returns the amount of set bits, or the amount of clear bits. */
 	inline size_t set_count() const;
 	inline size_t clear_count() const;
 

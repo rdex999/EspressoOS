@@ -27,6 +27,9 @@ bitmap::bitmap(void* buffer, size_t size)
 
 void bitmap::set(size_t index)
 {
+	if(!is_clear(index))
+		return;
+
 	size_t entry_idx = index / BITMAP_ENTRY_BITS;
 	size_t entry_offset = index % BITMAP_ENTRY_BITS;
 	m_buffer[entry_idx] |= (bitmap_entry_t)1 << entry_offset;
@@ -99,7 +102,9 @@ void bitmap::set(size_t index, size_t count)
 
 void bitmap::clear(size_t index)
 {
-
+	if(is_clear(index))
+		return;
+	
 	size_t entry_idx = index / BITMAP_ENTRY_BITS;
 	size_t entry_offset = index % BITMAP_ENTRY_BITS;
 	m_buffer[entry_idx] |= (bitmap_entry_t)1 << entry_offset;
@@ -239,7 +244,7 @@ bool bitmap::is_clear(size_t index, size_t count) const
 	return true;
 }
 
-size_t bitmap::find_clear() const
+inline size_t bitmap::find_clear() const
 {
 	return find_clear_from(0);
 }
@@ -299,4 +304,44 @@ size_t bitmap::find_clear_from(size_t index) const
 		}
 	}
 	return -1;
+}
+
+size_t bitmap::allocate()
+{
+	size_t index = find_clear();
+	if(index == (size_t)-1)
+		return (size_t)-1;
+	
+	set(index);
+	return index;
+}
+
+size_t bitmap::allocate(size_t count)
+{
+	size_t index = find_clear(count);
+	if(index == (size_t)-1)
+		return (size_t)-1;
+
+	set(index, count);
+	return index;
+}
+
+inline void bitmap::free(size_t index)
+{
+	clear(index);
+}
+
+inline void bitmap::free(size_t index, size_t count)
+{
+	clear(index, count);
+}
+
+inline size_t bitmap::set_count() const
+{
+	return m_set;
+}
+
+inline size_t bitmap::clear_count() const
+{
+	return m_clear;
 }
