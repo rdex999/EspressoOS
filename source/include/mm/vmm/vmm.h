@@ -36,7 +36,7 @@ typedef uint64_t virt_addr_t;
  * virt_addr_t vaddr = VMM_REVERSE_MAP[0x13000 / VMM_PAGE_SIZE];
  */
 #define VMM_REVERSE_MAP				((virt_addr_t*)PMM_BITMAP_END_ADDRESS)	
-#define VMM_REVERSE_MAP_LENGTH		((g_pmm_mmap_blocks / VMM_PAGE_SIZE) * sizeof(virt_addr_t))
+#define VMM_REVERSE_MAP_LENGTH		((g_pmm_total_blocks / VMM_PAGE_SIZE) * sizeof(virt_addr_t))
 #define VMM_REVERSE_MAP_SIZE		(VMM_REVERSE_MAP_LENGTH * sizeof(virt_addr_t))
 #define VMM_REVERSE_MAP_END			(VMM_REVERSE_MAP + VMM_REVERSE_MAP_LENGTH)
 

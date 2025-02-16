@@ -31,6 +31,7 @@ class bitmap
 public:
 	/* Initializes the bitmap, clears all bits. Note: <size> is the size of the bitmap in bytes. */
 	bitmap(void* buffer, size_t size);
+	bitmap() = default;
 
 	/* Set a single bit in the bitmap, or <count> bits starting from <index> */
 	void set(size_t index);
@@ -45,7 +46,7 @@ public:
 	bool is_clear(size_t index, size_t count) const;
 
 	/*  Get the index of the first clear bit, or get the index of the first <count> clear bits. */
-	inline size_t find_clear() const;
+	size_t find_clear() const;
 	size_t find_clear(size_t count) const;
 
 	/* Find a clear bit (or <count> bits) and set it to 1. Returns the index of the first allocated bit. */
@@ -53,20 +54,20 @@ public:
 	size_t allocate(size_t count);
 
 	/* Clear bit <index>, or clear <count> bits starting from <index>. */
-	inline void free(size_t index);
-	inline void free(size_t index, size_t count);
+	inline void free(size_t index)					{ clear(index); };
+	inline void free(size_t index, size_t count) 	{ clear(index, count); };
 
 	/* Returns the amount of set bits, or the amount of clear bits. */
-	inline size_t set_count() const;
-	inline size_t clear_count() const;
+	inline size_t set_count() const					{ return m_set; };
+	inline size_t clear_count() const				{ return m_clear; };
 
 private:
 	/* Find the first clear bit starting from <index>. */	
 	size_t find_clear_from(size_t index) const;
 	
-	bitmap_entry_t* const m_buffer;
-	const size_t m_size;
-	const size_t m_bit_count;
+	bitmap_entry_t* const m_buffer = NULL;
+	const size_t m_size = 0;
+	const size_t m_bit_count = 0;
 
 	size_t m_clear;
 	size_t m_set;

@@ -244,7 +244,7 @@ bool bitmap::is_clear(size_t index, size_t count) const
 	return true;
 }
 
-inline size_t bitmap::find_clear() const
+size_t bitmap::find_clear() const
 {
 	return find_clear_from(0);
 }
@@ -324,24 +324,4 @@ size_t bitmap::allocate(size_t count)
 
 	set(index, count);
 	return index;
-}
-
-inline void bitmap::free(size_t index)
-{
-	clear(index);
-}
-
-inline void bitmap::free(size_t index, size_t count)
-{
-	clear(index, count);
-}
-
-inline size_t bitmap::set_count() const
-{
-	return m_set;
-}
-
-inline size_t bitmap::clear_count() const
-{
-	return m_clear;
 }
