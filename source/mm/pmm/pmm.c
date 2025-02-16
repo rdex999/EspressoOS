@@ -21,7 +21,7 @@
 size_t g_pmm_total_blocks	= -1;
 size_t g_pmm_memory_blocks	= -1;
 
-bitmap g_pmm_bitmap;
+bitmap g_pmm_alloc_map;
 
 void pmm_init(multiboot_tag_mmap_t* mmap)
 {
@@ -53,7 +53,7 @@ void pmm_init(multiboot_tag_mmap_t* mmap)
 	g_pmm_memory_blocks = highest_available_memory / PMM_BLOCK_SIZE;
 
 	/* Create the bitmap */
-	new(&g_pmm_bitmap) bitmap(PMM_BITMAP_ADDRESS, PMM_BITMAP_SIZE);
+	new(&g_pmm_alloc_map) bitmap(PMM_BITMAP_ADDRESS, PMM_BITMAP_SIZE);
 
 	/* Mark unavailable blocks as used */
 	for(size_t i = 0; i < mmap->entries_length(); ++i)
@@ -71,7 +71,7 @@ void pmm_init(multiboot_tag_mmap_t* mmap)
 
 phys_addr_t pmm_alloc()
 {
-	size_t block = g_pmm_bitmap.allocate();
+	size_t block = g_pmm_alloc_map.allocate();
 	return pmm_block_to_addr(block);
 }
 
@@ -85,21 +85,21 @@ void pmm_free_blocks(phys_addr_t address, size_t count)
 {
 	phys_addr_t aligned_address = ALIGN_DOWN(address, PMM_BLOCK_SIZE);
 	size_t block = pmm_addr_to_block(aligned_address);
-	g_pmm_bitmap.free(block, count);
+	g_pmm_alloc_map.free(block, count);
 }
 
 void pmm_alloc_address(phys_addr_t address, size_t count)
 {
 	phys_addr_t aligned_address = ALIGN_DOWN(address, PMM_BLOCK_SIZE);
 	size_t block = pmm_addr_to_block(aligned_address);
-	g_pmm_bitmap.set(block, count);
+	g_pmm_alloc_map.set(block, count);
 }
 
 bool pmm_is_free(phys_addr_t address)
 {
 	size_t aligned = ALIGN_DOWN(address, PMM_BLOCK_SIZE);
 	size_t block = pmm_addr_to_block(aligned);
-	return g_pmm_bitmap.is_clear(block);
+	return g_pmm_alloc_map.is_clear(block);
 }
 
 size_t pmm_addr_to_block(phys_addr_t address)

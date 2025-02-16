@@ -32,13 +32,13 @@ typedef uint64_t phys_addr_t;
 /* Each bit specifies an available(0) or unavailable(1) memory block of PMM_BLOCK_SIZE bytes. */
 #define PMM_BITMAP_ADDRESS 			KERNEL_END
 #define PMM_BITMAP_END_ADDRESS 		((void*)((uint64_t)PMM_BITMAP_ADDRESS + PMM_BITMAP_SIZE))
-#define PMM_BITMAP_SIZE 			(g_pmm_memory_blocks / 8)						/* The size of the bitmap in bytes. */
+#define PMM_BITMAP_SIZE 			(g_pmm_memory_blocks / 8llu)					/* The size of the bitmap in bytes. */
 
 /* Dont cancle me for using globals, there isnt realy a better way for doing this */
 extern size_t g_pmm_total_blocks;		/* The total amount of memory from the memory map, including memory-mapped devices. */
 extern size_t g_pmm_memory_blocks;		/* The total amount of memory blocks in ram */
 
-extern bitmap g_pmm_bitmap;				/* The bitmap of physical blocks. allocated (1) or free (0) */
+extern bitmap g_pmm_alloc_map;				/* The bitmap of physical blocks. allocated (1) or free (0) */
 
 /* NOTE: usualy, "block" referse to a bit in the bitmap */
 

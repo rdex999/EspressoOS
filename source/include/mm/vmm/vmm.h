@@ -23,7 +23,8 @@
 #include <stdint.h>
 #include <stddef.h>
 
-extern uint64_t* g_pml4;
+extern uint64_t* g_vmm_pml4;		/* The page map level 4 structure. */
+extern bitmap g_vmm_alloc_map;		/* Each entry specifies a page. Keeps track of which virtual addresses are allocated (1) or not (0). */
 
 typedef uint64_t virt_addr_t;
 
@@ -39,6 +40,10 @@ typedef uint64_t virt_addr_t;
 #define VMM_REVERSE_MAP_LENGTH		((g_pmm_total_blocks / VMM_PAGE_SIZE) * sizeof(virt_addr_t))
 #define VMM_REVERSE_MAP_SIZE		(VMM_REVERSE_MAP_LENGTH * sizeof(virt_addr_t))
 #define VMM_REVERSE_MAP_END			(VMM_REVERSE_MAP + VMM_REVERSE_MAP_LENGTH)
+
+#define VMM_ALLOC_MAP				((void*)VMM_REVERSE_MAP_END)	/* The physical address of the alloc bitmap buffer. */
+#define VMM_ALLOC_MAP_SIZE 			(g_pmm_total_blocks / 8llu)		/* The size of the alloc bitmap buffer in bytes. */
+#define VMM_ALLOC_MAP_END			((void*)((uint64_t)VMM_ALLOC_MAP + VMM_ALLOC_MAP_SIZE))
 
 /* 
  * Page entry flags, for detailes (future me who forgets all of that) 
@@ -177,10 +182,28 @@ int vmm_map_virtual_to_physical_pages(virt_addr_t vaddr, phys_addr_t paddr, uint
 bool vmm_is_valid_entry(uint64_t entry);
 
 /* 
- * From a given paging entry (pde, pdpe, pml4e), returns a pointer to its sub table. 
- * For a pte, the function will return a virtual address, which represents the physical block the pte points to.
- */
+* From a given paging entry (pde, pdpe, pml4e), returns a pointer to its sub table. 
+* For a pte, the function will return a virtual address, which represents the physical block the pte points to.
+*/
 uint64_t* vmm_get_sub_table(uint64_t entry);
+
+/* Mark page <address> as allocated in the allocation map (bitmap) */
+void vmm_mark_alloc_virtual_page(virt_addr_t address);
+
+/* Mark <count> pages starting from <address> as allocated in the allocation map (bitmap) */
+void vmm_mark_alloc_virtual_pages(virt_addr_t address, size_t count);
+
+/* Find a free virtual page in the alloc map, and mark it as allocated. */
+virt_addr_t vmm_alloc_virtual_page();
+
+/* Find <count> free virtual pages in the alloc map, and mark them as allocated. */
+virt_addr_t vmm_alloc_virtual_pages(size_t count);
+
+/* Converts a block (index in the bitmap) to its virtual address. */
+virt_addr_t vmm_block_to_address(size_t block);
+
+/* Converts a virtual address to its index in the bitmap (block) */
+size_t vmm_address_to_block(virt_addr_t address);
 
 /* Returns a pointer to the page table entry of a given virtual address. Will return null on failure. */
 uint64_t* vmm_get_pte(virt_addr_t address);

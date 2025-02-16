@@ -17,12 +17,17 @@
 
 #include "mm/vmm/vmm.h"
 
-uint64_t* g_pml4;
+uint64_t* g_vmm_pml4;
+bitmap g_vmm_alloc_map;
 
 int vmm_init()
 {
+	new(&g_vmm_alloc_map) bitmap(VMM_ALLOC_MAP, VMM_ALLOC_MAP_SIZE);
+
 	/* Allocate the physical memory of the kernel, including the reverse mapping. */
-	pmm_alloc_address(0, DIV_ROUND_UP((size_t)VMM_REVERSE_MAP_END, PMM_BLOCK_SIZE));
+	size_t kernel_blocks = DIV_ROUND_UP((size_t)VMM_ALLOC_MAP_END, PMM_BLOCK_SIZE);
+	pmm_alloc_address(0, kernel_blocks);
+	vmm_mark_alloc_virtual_pages((virt_addr_t)0, kernel_blocks);
 
 	phys_addr_t pml4_paddr = pmm_alloc();
 	if(pml4_paddr == (phys_addr_t)-1)
@@ -38,14 +43,14 @@ int vmm_init()
 	 * and in the process of creating them it finds a free virtual address. The virtual address it will find, was probably also found
 	 * in the first call to vmm_map_physical_page/s() because it wasnt able yet to "mark" it as allocated.
 	 */
-	g_pml4 = (uint64_t*)pml4_paddr;
-	vmm_set_virtual_of(pml4_paddr, (virt_addr_t)g_pml4);
+	g_vmm_pml4 = (uint64_t*)pml4_paddr;
+	vmm_set_virtual_of(pml4_paddr, (virt_addr_t)g_vmm_pml4);
 
 	phys_addr_t pdp_paddr = pmm_alloc();
 	if(pdp_paddr == (phys_addr_t)-1)
 		return ERR_OUT_OF_MEMORY;
 
-	g_pml4[0] = VMM_CREATE_TABLE_ENTRY(VMM_PAGE_P | VMM_PAGE_RW, pdp_paddr);
+	g_vmm_pml4[0] = VMM_CREATE_TABLE_ENTRY(VMM_PAGE_P | VMM_PAGE_RW, pdp_paddr);
 	vmm_set_virtual_of(pdp_paddr, (virt_addr_t)pdp_paddr);
 
 	phys_addr_t pd_paddr = pmm_alloc();
@@ -67,7 +72,7 @@ int vmm_init()
 		0, 
 		0, 
 		VMM_PAGE_P | VMM_PAGE_RW,
-		(size_t)VMM_REVERSE_MAP_END / VMM_PAGE_SIZE
+		(size_t)VMM_ALLOC_MAP_END / VMM_PAGE_SIZE
 	);
 
 	if(status != SUCCESS)
@@ -300,6 +305,40 @@ uint64_t* vmm_get_sub_table(uint64_t entry)
 {
 	phys_addr_t address = VMM_GET_ENTRY_TABLE(entry);
 	return (uint64_t*)vmm_get_virtual_of(address);
+}
+
+void vmm_mark_alloc_virtual_page(virt_addr_t address)
+{
+	size_t block = vmm_address_to_block(address);
+	g_vmm_alloc_map.set(block);
+}
+
+void vmm_mark_alloc_virtual_pages(virt_addr_t address, size_t count)
+{
+	size_t block = vmm_address_to_block(address);
+	g_vmm_alloc_map.set(block, count);
+}
+
+virt_addr_t vmm_alloc_virtual_page()
+{
+	size_t block = g_vmm_alloc_map.allocate();
+	return vmm_block_to_address(block);
+}
+
+virt_addr_t vmm_alloc_virtual_pages(size_t count)
+{
+	size_t block = g_vmm_alloc_map.allocate(count);
+	return vmm_block_to_address(block);
+}
+
+virt_addr_t vmm_block_to_address(size_t block)
+{
+	return block * VMM_PAGE_SIZE;
+}
+
+size_t vmm_address_to_block(virt_addr_t address)
+{
+	return address / VMM_PAGE_SIZE;
 }
 
 uint64_t *vmm_get_pte(virt_addr_t address) 
@@ -584,13 +623,13 @@ int vmm_free_pdpe(virt_addr_t address)
 uint64_t* vmm_get_pml4e(virt_addr_t address)
 {
 	int pml4e_index = VMM_VADDR_PML4E_IDX(address);
-	return &g_pml4[pml4e_index];
+	return &g_vmm_pml4[pml4e_index];
 }
 
 void vmm_set_pml4e(virt_addr_t address, uint64_t entry)
 {
 	int pml4e_index = VMM_VADDR_PML4E_IDX(address);
-	g_pml4[pml4e_index] = entry;
+	g_vmm_pml4[pml4e_index] = entry;
 }
 
 int vmm_alloc_pml4e(virt_addr_t address, uint64_t flags)
