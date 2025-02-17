@@ -31,3 +31,4 @@ extern char _kernel_end;
 #define KERNEL_END 						((void*)&_kernel_end)
 #define MIN(a, b) 						((a) < (b) ? (a) : (b))
 #define MAX(a, b) 						((a) > (b) ? (a) : (b))
+#define ARR_LEN(arr)					(sizeof((arr)) / sizeof((arr)[0]))

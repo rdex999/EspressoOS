@@ -17,11 +17,12 @@
 
 #pragma once
 
+#include <stdint.h>
+#include <stddef.h>
+#include "common.h"
 #include "mm/pmm/pmm.h"
 #include "cpu.h"
 #include "error.h"
-#include <stdint.h>
-#include <stddef.h>
 
 extern uint64_t* g_vmm_pml4;		/* The page map level 4 structure. */
 extern bitmap g_vmm_alloc_map;		/* Each entry specifies a page. Keeps track of which virtual addresses are allocated (1) or not (0). */
@@ -67,8 +68,8 @@ typedef uint64_t virt_addr_t;
 
 #define VMM_VADDR_PML4E_IDX(vaddr) 			(((vaddr) >> 39) & 0x1FF)
 #define VMM_VADDR_PDPE_IDX(vaddr) 			(((vaddr) >> 30) & 0x1FF)
-#define VMM_VADDR_PD_IDX(vaddr)				(((vaddr) >> 21) & 0x1FF)
-#define VMM_VADDR_PT_IDX(vaddr)				(((vaddr) >> 12) & 0x1FF)
+#define VMM_VADDR_PDE_IDX(vaddr)				(((vaddr) >> 21) & 0x1FF)
+#define VMM_VADDR_PTE_IDX(vaddr)				(((vaddr) >> 12) & 0x1FF)
 
 #define VMM_VADDR_SET_PT_IDX(vaddr, idx)	(((vaddr) & ~((virt_addr_t)0x1FF << 12)) | ((idx) & 1023))
 #define VMM_VADDR_SET_PD_IDX(vaddr, idx)	(((vaddr) & ~((virt_addr_t)0x1FF << 21)) | ((idx) & 1023))
@@ -104,6 +105,18 @@ typedef uint64_t virt_addr_t;
 /* Initialize the virtual memory manager. Returns 0 on success, an error code otherwise. */
 int vmm_init();
 
+/* 
+ * Initialize the first page tables. Identity maps kernel memory. 
+ * The page tables used to identity map kernel memory, are identity mapped themselves. 
+ * Meaning, the physical addresses of each entry are the virtual addresses.
+ * Now why cant i just use the vmm_map_virtual_to_physical function? because it uses the temporary page mapping functions,
+ * which depend on already setup page tables (which are not yet setup). 
+ * Specificaly, it tries to return a pointer to a virtual address, but that address is not valid yet because CR3 wasent updated
+ * yet. This comment is for future me forgetting everything here.
+ * Returns the end address of the paging structures.
+ */
+phys_addr_t vmm_init_first_tables(phys_addr_t end_address);
+
 /* Allocates a memory block of <VMM_PAGE_SIZE>, returns its virtual address. Returns -1 on failure. */
 virt_addr_t vmm_alloc_page(uint64_t flags);
 
@@ -111,22 +124,16 @@ virt_addr_t vmm_alloc_page(uint64_t flags);
 virt_addr_t vmm_alloc_pages(uint64_t flags, size_t count);
 
 /* 
- * Unmaps a virtual address. 
- * Frees its corresponding physical address using the physical memory manager. Returns 0 on success, an error code otherwise.
- */
+* Unmaps a virtual address. 
+* Frees its corresponding physical address using the physical memory manager. Returns 0 on success, an error code otherwise.
+*/
 int vmm_unmap_page(virt_addr_t address);
 
 /* 
- * Unmaps <count> pages of the given virtual address.
- * Frees their corresponding physical address using the physical memory manager. Returns 0 on success, an error code otherwise.
- */
+* Unmaps <count> pages of the given virtual address.
+* Frees their corresponding physical address using the physical memory manager. Returns 0 on success, an error code otherwise.
+*/
 int vmm_unmap_pages(virt_addr_t address, size_t count);
-
-/* Find a free page, meaning, a free virtual address of VMM_PAGE_SIZE bytes. Returns -1 on failure. */
-virt_addr_t vmm_find_free_page();
-
-/* Find <count> free pages, meaning, a free virtual address of VMM_PAGE_SIZE*<count> bytes. Returns -1 on failure. */
-virt_addr_t vmm_find_free_pages(size_t count);
 
 /* Returns the physical address of the given virtual address. Returns -1 on failure. */
 phys_addr_t vmm_get_physical_of(virt_addr_t address);
@@ -137,23 +144,25 @@ virt_addr_t vmm_get_virtual_of(phys_addr_t address);
 void vmm_set_virtual_of(phys_addr_t paddr, virt_addr_t vaddr);
 
 /* 
- * Checks is the given virtual address is mapped to some physical address. 
- * Returns true if not mapped (free), false if mapped (not free). 
- */
+* Checks is the given virtual address is mapped to some physical address. 
+* Returns true if not mapped (free), false if mapped (not free). 
+*/
 bool vmm_is_free_page(virt_addr_t address);
 
 /*
- * Maps the given virtual address to a physical address, sets the given flags.
- * Uses the physical memory manager to find a free physical memory block, and allocates it. 
- * Returns 0 on success, an error code otherwise.
- */
+* Maps the given virtual address to a physical address, sets the given flags.
+* Uses the physical memory manager to find a free physical memory block, and allocates it. 
+* Note: This function does not mark <address> as allocated in the allocation map (bitmap).
+* Returns 0 on success, an error code otherwise.
+*/
 int vmm_map_virtual_page(virt_addr_t address, uint64_t flags);
 
 /*
- * Maps <count> pages of the given virtual address to a physical address, sets the given flags.
- * Uses the physical memory manager to find a free physical memory blocks, and allocates them. 
- * Returns 0 on success, an error code otherwise.
- */
+* Maps <count> pages of the given virtual address to a physical address, sets the given flags.
+* Uses the physical memory manager to find a free physical memory blocks, and allocates them. 
+* Note: This function does not mark <address> as allocated in the allocation map (bitmap).
+* Returns 0 on success, an error code otherwise.
+*/
 int vmm_map_virtual_pages(virt_addr_t address, uint64_t flags, size_t count);
 
 /* Maps the physical address <address> to some virtual address. Returns the virtual address, or -1 on failure. */
@@ -163,22 +172,36 @@ virt_addr_t vmm_map_physical_page(phys_addr_t address, uint64_t flags);
 virt_addr_t vmm_map_physical_pages(phys_addr_t address, uint64_t flags, size_t count);
 
 /* 
- * Map a virtual address to a physical address, set the given flags for the lowest page table (only for the PTE). 
- * Uses the physical memory manager to allocate the physical address. Returns 0 on success, an error code otherwise.
- */
+* Map a virtual address to a physical address, set the given flags for the lowest page table (only for the PTE). 
+* Uses the physical memory manager to allocate the physical address. Returns 0 on success, an error code otherwise.
+*/
 int vmm_map_virtual_to_physical_page(virt_addr_t vaddr, phys_addr_t paddr, uint64_t flags);
 
 /* 
- * Map a <count> pages of a virtual address to a physical address, 
- * set the given flags for the lowest page table (only for the PTE). 
- * Uses the physical memory manager to allocate the physical addresses. Returns 0 on success, an error code otherwise.
- */
+* Map a <count> pages of a virtual address to a physical address, 
+* set the given flags for the lowest page table (only for the PTE). 
+* Uses the physical memory manager to allocate the physical addresses. Returns 0 on success, an error code otherwise.
+*/
 int vmm_map_virtual_to_physical_pages(virt_addr_t vaddr, phys_addr_t paddr, uint64_t flags, size_t count);
 
 /* 
- * Checks if the entry is valid.
- * meaning, if it points to a page table/physical block. Returns true if it does point to something, false otherwise.
+ * Initializes the temporary mapping.
+ * Takes the address of the temporary mapping as a parameter.
+ * Returns 0 on success, an error code otherwise.
+ * Note: this function is only used in the vmm_init function.
  */
+int vmm_temp_map_init(virt_addr_t temp_map_address);
+
+/* Temporary map a physical address, returns the virtual address that coresponds to it. */
+virt_addr_t vmm_temp_map(phys_addr_t address);
+
+/* Unmap a page that was mapped with the vmm_temp_map function. */
+void vmm_temp_unmap(virt_addr_t address);
+
+/* 
+* Checks if the entry is valid.
+* meaning, if it points to a page table/physical block. Returns true if it does point to something, false otherwise.
+*/
 bool vmm_is_valid_entry(uint64_t entry);
 
 /* 

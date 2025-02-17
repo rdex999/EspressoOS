@@ -43,6 +43,14 @@ void kernel_main(multiboot_info_t* mbd)
 	pmm_init(mmap);
 	vmm_init();
 
+	phys_addr_t paddr = (phys_addr_t)1*1024*1024*1024;
+	virt_addr_t vaddr = (virt_addr_t)2*1024*1024*1024;
+	int status = vmm_map_virtual_to_physical_page(vaddr, paddr, VMM_PAGE_P | VMM_PAGE_RW);
+
+	*(int*)vaddr = 420;
+
+	int value = *(int*)vaddr;
+
 	while(1)
 	{
 		asm volatile("cli");
