@@ -71,10 +71,10 @@ typedef uint64_t virt_addr_t;
 #define VMM_VADDR_PDE_IDX(vaddr)				(((vaddr) >> 21) & 0x1FF)
 #define VMM_VADDR_PTE_IDX(vaddr)				(((vaddr) >> 12) & 0x1FF)
 
-#define VMM_VADDR_SET_PT_IDX(vaddr, idx)	(((vaddr) & ~((virt_addr_t)0x1FF << 12)) | ((idx) & 1023))
-#define VMM_VADDR_SET_PD_IDX(vaddr, idx)	(((vaddr) & ~((virt_addr_t)0x1FF << 21)) | ((idx) & 1023))
-#define VMM_VADDR_SET_PDP_IDX(vaddr, idx)	(((vaddr) & ~((virt_addr_t)0x1FF << 30)) | ((idx) & 1023))
-#define VMM_VADDR_SET_PML4_IDX(vaddr, idx)	(((vaddr) & ~((virt_addr_t)0x1FF << 39)) | ((idx) & 1023))
+#define VMM_VADDR_SET_PTE_IDX(vaddr, idx)	(((vaddr) & ~((virt_addr_t)0x1FF << 12)) | ((idx) & 1023))
+#define VMM_VADDR_SET_PDE_IDX(vaddr, idx)	(((vaddr) & ~((virt_addr_t)0x1FF << 21)) | ((idx) & 1023))
+#define VMM_VADDR_SET_PDPE_IDX(vaddr, idx)	(((vaddr) & ~((virt_addr_t)0x1FF << 30)) | ((idx) & 1023))
+#define VMM_VADDR_SET_PML4E_IDX(vaddr, idx)	(((vaddr) & ~((virt_addr_t)0x1FF << 39)) | ((idx) & 1023))
 
 /* Get a pointer to the paging structure/physical block the entry points to. */
 #define VMM_GET_ENTRY_TABLE(entry) 					((entry) & 0x7FFFFFFFFF000)
@@ -240,9 +240,6 @@ uint64_t* vmm_get_pte(virt_addr_t address);
 /* Sets the page table entry of a given virtual address. */
 void vmm_set_pte(virt_addr_t address, uint64_t entry);
 
-/* Allocates the pt entry, updates the LU bits in the entries pd entry. Returns 0 on success, an error code otherwise. */
-int vmm_alloc_pte(virt_addr_t address, uint64_t flags);
-
 /* Frees the pt entry. Updates the LU bits in the entries pd entry. Returns 0 on success, an error code otherwise. */
 int vmm_free_pte(virt_addr_t address);
 
@@ -251,9 +248,6 @@ uint64_t* vmm_get_pde(virt_addr_t address);
 
 /* Sets the page directory entry of a given virtual address. */
 void vmm_set_pde(virt_addr_t address, uint64_t entry);
-
-/* Allocates the pd entry, updates the LU bits in the entries pdp entry. Returns 0 on success, an error code otherwise. */
-int vmm_alloc_pde(virt_addr_t address, uint64_t flags);
 
 /* Frees the pd entry. Updates the LU bits in the entries pdp entry. Returns 0 on success, an error code otherwise. */
 int vmm_free_pde(virt_addr_t address);
@@ -264,9 +258,6 @@ uint64_t* vmm_get_pdpe(virt_addr_t address);
 /* Sets the page directory pointer table entry of a given virtual address. */
 void vmm_set_pdpe(virt_addr_t address, uint64_t entry);
 
-/* Allocates the pdp entry, updates the LU bits in the entries pml4 entry. Returns 0 on success, an error code otherwise. */
-int vmm_alloc_pdpe(virt_addr_t address, uint64_t flags);
-
 /* Frees the pdp entry. Updates the LU bits in the entries pml4 entry. Returns 0 on success, an error code otherwise. */
 int vmm_free_pdpe(virt_addr_t address);
 
@@ -276,8 +267,5 @@ uint64_t* vmm_get_pml4e(virt_addr_t address);
 /* Sets the page map level 4 entry of a given virtual address. */
 void vmm_set_pml4e(virt_addr_t address, uint64_t entry);
 
-/* Allocates the pml4 entry. Returns 0 on success, an error code otherwise. */
-int vmm_alloc_pml4e(virt_addr_t address, uint64_t flags);
-
-/* Frees the pml4 entry. */
-void vmm_free_pml4e(virt_addr_t address);
+/* Frees the pml4 entry. Returns 0 on success, an error code otherwise. */
+int vmm_free_pml4e(virt_addr_t address);

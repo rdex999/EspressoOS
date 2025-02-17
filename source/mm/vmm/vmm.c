@@ -44,6 +44,17 @@ int vmm_init()
 
 phys_addr_t vmm_init_first_tables(phys_addr_t end_address)
 {
+	/* 
+	 * So what this function does is just loop over the addresses starting from address 0 until <end_address>, in 4KiB pages.
+	 * For each address, it creates the paging structures for it and maps it.
+	 * If paging structures are created, <end_address> grows, so that the function will also identity map the sub-tables of the
+	 * paging structures.
+	 * So, for each address, check if its paging structures exist, If not, 
+	 * create it by allocating a physical address and make it point to it.
+	 * Then, map the allocated physical address to a temporary virtual address so we can access its sub table 
+	 * (if its a pml4e, then the sub table is the pdpt)
+	 */
+
 	end_address += VMM_PAGE_SIZE;
 	size_t blocks = end_address / VMM_PAGE_SIZE;
 	pmm_alloc_address(0, blocks);
@@ -56,6 +67,7 @@ phys_addr_t vmm_init_first_tables(phys_addr_t end_address)
 		vmm_mark_alloc_virtual_page(address);
 		vmm_set_virtual_of(address, address);
 
+		/* Check if the page map level 4 entry is valid (points to something), if not, create it. */
 		uint64_t* pml4e = vmm_get_pml4e(address);
 		uint64_t* pdp;
 		if(vmm_is_valid_entry(*pml4e))
@@ -71,6 +83,7 @@ phys_addr_t vmm_init_first_tables(phys_addr_t end_address)
 			pdp = (uint64_t*)pdp_paddr;		
 		}
 	
+		/* Check if the page directory pointer entry is valid (points to something), if not, create it. */
 		uint64_t* pdpe = &pdp[VMM_VADDR_PDPE_IDX(address)];
 		uint64_t* pd;
 		if(vmm_is_valid_entry(*pdpe))
@@ -87,6 +100,7 @@ phys_addr_t vmm_init_first_tables(phys_addr_t end_address)
 			pd = (uint64_t*)pd_paddr;
 		}
 	
+		/* Check if the page directory entry is valid (points to something), if not, create it. */
 		uint64_t* pde = &pd[VMM_VADDR_PDE_IDX(address)];
 		uint64_t* pt;
 		if(vmm_is_valid_entry(*pde))
@@ -103,6 +117,7 @@ phys_addr_t vmm_init_first_tables(phys_addr_t end_address)
 			pt = (uint64_t*)pt_paddr;
 		}
 
+		/* Create the page table entry, make it point to <address>. */
 		uint64_t* pte = &pt[VMM_VADDR_PTE_IDX(address)];
 		*pde = VMM_INC_ENTRY_LU(*pde);
 		*pte = VMM_CREATE_TABLE_ENTRY(VMM_PAGE_P | VMM_PAGE_RW, address);
@@ -230,59 +245,67 @@ virt_addr_t vmm_map_physical_pages(phys_addr_t address, uint64_t flags, size_t c
 
 int vmm_map_virtual_to_physical_page(virt_addr_t vaddr, phys_addr_t paddr, uint64_t flags)
 {
+	/* 
+	 * In general, what this function does is check if each paging structure (pml4e, pdpe, ...) exist, If not, 
+	 * create it by allocating a physical address and make it point to it.
+	 * Then, map the allocated physical address to a temporary virtual address so we can access its sub table 
+	 * (if its a pml4e, then the sub table is the pdpt)
+	 */
+
 	pmm_alloc_address(paddr, 1);
 	vmm_mark_alloc_virtual_page(vaddr);
 	
-	phys_addr_t paddr_to_map[3] = { (phys_addr_t)0 };
-	
+	/* Check if the page map level 4 entry is valid (points to something), if not, create it. */
 	uint64_t* pml4e = vmm_get_pml4e(vaddr);
 	uint64_t* pdp;
+	phys_addr_t pdp_paddr;
 	bool pdp_temp_map = false;
 	if(vmm_is_valid_entry(*pml4e))
 		pdp = vmm_get_sub_table(*pml4e);
 	else
 	{
-		phys_addr_t pdp_paddr = pmm_alloc();
+		pdp_paddr = pmm_alloc();
 		if(pdp_paddr == (phys_addr_t)-1)
 			return ERR_OUT_OF_MEMORY;
 		
-		paddr_to_map[0] = pdp_paddr;
 		*pml4e = VMM_CREATE_TABLE_ENTRY(VMM_PAGE_P | VMM_PAGE_RW, pdp_paddr);
 		pdp = (uint64_t*)vmm_temp_map(pdp_paddr);
 		pdp_temp_map = true;
 	}
 	
+	/* Check if the page directory pointer entry is valid (points to something), if not, create it. */
 	uint64_t* pdpe = &pdp[VMM_VADDR_PDPE_IDX(vaddr)];
 	uint64_t* pd;
+	phys_addr_t pd_paddr;
 	bool pd_temp_map = false;
 	if(vmm_is_valid_entry(*pdpe))
 		pd = vmm_get_sub_table(*pdpe);
 	else
 	{
-		phys_addr_t pd_paddr = pmm_alloc();
+		pd_paddr = pmm_alloc();
 		if(pd_paddr == (phys_addr_t)-1)
 			return ERR_OUT_OF_MEMORY;
 		
-		paddr_to_map[1] = pd_paddr;
 		*pdpe = VMM_CREATE_TABLE_ENTRY(VMM_PAGE_P | VMM_PAGE_RW, pd_paddr);
 		*pml4e = VMM_INC_ENTRY_LU(*pml4e);
 		
 		pd = (uint64_t*)vmm_temp_map(pd_paddr);
 		pd_temp_map = true;
 	}
-	
+
+	/* Check if the page directory entry is valid (points to something), if not, create it. */
 	uint64_t* pde = &pd[VMM_VADDR_PDE_IDX(vaddr)];
 	uint64_t* pt;
+	phys_addr_t pt_paddr;
 	bool pt_temp_map = false;
 	if(vmm_is_valid_entry(*pde))
 		pt = vmm_get_sub_table(*pde);
 	else
 	{
-		phys_addr_t pt_paddr = pmm_alloc();
+		pt_paddr = pmm_alloc();
 		if(pt_paddr == (phys_addr_t)-1)
 			return ERR_OUT_OF_MEMORY;
 		
-		paddr_to_map[2] = pt_paddr;
 		*pde = VMM_CREATE_TABLE_ENTRY(VMM_PAGE_P | VMM_PAGE_RW, pt_paddr);
 		*pdpe = VMM_INC_ENTRY_LU(*pdpe);
 		
@@ -294,17 +317,11 @@ int vmm_map_virtual_to_physical_page(virt_addr_t vaddr, phys_addr_t paddr, uint6
 	*pte = VMM_CREATE_TABLE_ENTRY(flags, paddr);
 	*pde = VMM_INC_ENTRY_LU(*pde);
 	vmm_set_virtual_of(paddr, vaddr);
-	
-	if(pt_temp_map)		vmm_temp_unmap((virt_addr_t)pd);
-	if(pd_temp_map)		vmm_temp_unmap((virt_addr_t)pd);
-	if(pdp_temp_map)	vmm_temp_unmap((virt_addr_t)pdp);
-	
-	for(int i = 0; i < (int)ARR_LEN(paddr_to_map); ++i)
-	{
-		if(paddr_to_map[i] != 0)
-			if(vmm_map_physical_page(paddr_to_map[i], VMM_PAGE_P | VMM_PAGE_RW) == (virt_addr_t)-1)
-				return ERR_OUT_OF_MEMORY;
-	}
+
+	/* If any paging structures were created, delete the temporary mappings for their physical addresses, and create real ones. */
+	if(pt_temp_map)		{ vmm_temp_unmap((virt_addr_t)pt); 		vmm_map_physical_page(pt_paddr, VMM_PAGE_P | VMM_PAGE_RW); }
+	if(pd_temp_map)		{ vmm_temp_unmap((virt_addr_t)pd); 		vmm_map_physical_page(pd_paddr, VMM_PAGE_P | VMM_PAGE_RW); }
+	if(pdp_temp_map)	{ vmm_temp_unmap((virt_addr_t)pdp); 	vmm_map_physical_page(pdp_paddr, VMM_PAGE_P | VMM_PAGE_RW); }
 	
 	return SUCCESS;
 }
@@ -327,6 +344,12 @@ int vmm_map_virtual_to_physical_pages(virt_addr_t vaddr, phys_addr_t paddr, uint
 
 int vmm_temp_map_init(virt_addr_t temp_map_address)
 {
+	/* 
+	 * In general, what this function does is check if each paging structure (pml4e, pdpe, ...) exist, If not, 
+	 * create it by allocating a physical address and make it point to it. 
+	 * Here we can use the physical address as the virtual address, as it is promissed to be identity mapped by vmm_init_first_tables().
+	 */
+
 	uint64_t* pml4e = vmm_get_pml4e(temp_map_address);
 	uint64_t* pdp;
 	if(vmm_is_valid_entry(*pml4e))
@@ -477,26 +500,6 @@ void vmm_set_pte(virt_addr_t address, uint64_t entry)
 	vmm_set_virtual_of(VMM_GET_ENTRY_TABLE(entry), address);
 }
 
-int vmm_alloc_pte(virt_addr_t address, uint64_t flags)
-{
-	uint64_t* pte = vmm_get_pte(address);
-	if(pte == NULL)
-		return ERR_PAGE_NOT_MAPPED;
-
-	phys_addr_t paddr = pmm_alloc();
-	if(paddr == (phys_addr_t)-1)
-		return ERR_OUT_OF_MEMORY;
-
-	*pte = VMM_CREATE_TABLE_ENTRY(flags, paddr);
-	vmm_set_virtual_of(paddr, address);
-	vmm_mark_alloc_virtual_page(address);
-
-	uint64_t* pde = vmm_get_pde(address);
-	*pde = VMM_INC_ENTRY_LU(*pde);
-
-	return SUCCESS;
-}
-
 int vmm_free_pte(virt_addr_t address)
 {
 	uint64_t* pde = vmm_get_pde(address);
@@ -548,31 +551,6 @@ void vmm_set_pde(virt_addr_t address, uint64_t entry)
 	*pde = entry;
 }
 
-int vmm_alloc_pde(virt_addr_t address, uint64_t flags)
-{
-	uint64_t* pde = vmm_get_pde(address);
-	if(pde == NULL)
-		return ERR_PAGE_NOT_MAPPED;
-
-	phys_addr_t pt_paddr = pmm_alloc();
-	if(pt_paddr == (phys_addr_t)-1)
-		return ERR_OUT_OF_MEMORY;
-
-	virt_addr_t pt_vaddr = vmm_map_physical_page(pt_paddr, VMM_PAGE_P | VMM_PAGE_RW);
-	if(pt_vaddr == (virt_addr_t)-1)
-	{
-		pmm_free(pt_paddr);
-		return ERR_OUT_OF_MEMORY;
-	}
-
-	*pde = VMM_CREATE_TABLE_ENTRY(flags, pt_paddr);
-
-	uint64_t* pdpe = vmm_get_pdpe(address);
-	*pdpe = VMM_INC_ENTRY_LU(*pdpe);
-
-	return SUCCESS;
-}
-
 int vmm_free_pde(virt_addr_t address)
 {
 	uint64_t* pdpe = vmm_get_pdpe(address);
@@ -588,34 +566,32 @@ int vmm_free_pde(virt_addr_t address)
 	 * so if its zero it will call this function, to free the pde. As we only want to free the pt entries, without any recursion,
 	 * set the value of the LU bits in this entry to 1023, so there will be no recursion. (LU will not be zero)
 	 */
-	int pt_to_free_count = VMM_GET_ENTRY_LU(*pde);
+	int pte_to_free_count = VMM_GET_ENTRY_LU(*pde);
 	*pde = VMM_SET_ENTRY_LU(*pde, (size_t)1023);
 	uint64_t* pt = vmm_get_sub_table(*pde);
 	for(int i = 0; i < VMM_PAGE_TABLE_LENGTH; ++i)
 	{
 		/* 
 		 * If there are no more pt's to free, break out of the loop. 
-		 * This if statement not right after decrementing <pt_to_free_count> 
-		 * so it handles the case when <pt_to_free_count> is 0 before even entering the loop.
+		 * This if statement not right after decrementing <pte_to_free_count> 
+		 * so it handles the case when <pte_to_free_count> is 0 before even entering the loop.
 		 */
-		if(pt_to_free_count == 0)							
+		if(pte_to_free_count == 0)							
 			break;		
 
 		if(vmm_is_valid_entry(pt[i]))
 		{
-			vmm_free_pte(VMM_VADDR_SET_PT_IDX(address, i));
-			--pt_to_free_count;
+			vmm_free_pte(VMM_VADDR_SET_PTE_IDX(address, i));
+			--pte_to_free_count;
 		}
 	}
 	
-	phys_addr_t pt_paddr = VMM_GET_ENTRY_TABLE(*pde);
-	virt_addr_t pt_vaddr = vmm_get_virtual_of(pt_paddr);
-
 	/* Free the physical block the entry points to, and mark the entry as not preset. Basicaly free it. */
+	phys_addr_t pt_paddr = VMM_GET_ENTRY_TABLE(*pde);
 	pmm_free(pt_paddr);
 
 	/* Free the virtual address that was mapped to the physical address of the page table. */
-	vmm_unmap_page(pt_vaddr);
+	vmm_unmap_page((virt_addr_t)pt);
 
 	*pde = 0llu;
 
@@ -654,31 +630,6 @@ void vmm_set_pdpe(virt_addr_t address, uint64_t entry)
 	*pdpe = entry;
 }
 
-int vmm_alloc_pdpe(virt_addr_t address, uint64_t flags)
-{
-	uint64_t* pdpe = vmm_get_pdpe(address);
-	if(pdpe == NULL)
-		return ERR_PAGE_NOT_MAPPED;
-
-	phys_addr_t pd_paddr = pmm_alloc();
-	if(pd_paddr == (phys_addr_t)-1)
-		return ERR_OUT_OF_MEMORY;
-
-	virt_addr_t pd_vaddr = vmm_map_physical_page(pd_paddr, VMM_PAGE_P | VMM_PAGE_RW);
-	if(pd_vaddr == (virt_addr_t)-1)
-	{
-		pmm_free(pd_paddr);	
-		return ERR_OUT_OF_MEMORY;
-	}
-
-	*pdpe = VMM_CREATE_TABLE_ENTRY(flags, pd_paddr);
-
-	uint64_t* pml4e = vmm_get_pml4e(address);
-	*pml4e = VMM_INC_ENTRY_LU(*pml4e);
-
-	return SUCCESS;
-}
-
 int vmm_free_pdpe(virt_addr_t address)
 {
 	uint64_t* pml4e = vmm_get_pml4e(address);
@@ -693,34 +644,32 @@ int vmm_free_pdpe(virt_addr_t address)
 	 * so if its zero it will call this function, to free the pdpe. As we only want to free the pd entries, without any recursion,
 	 * set the value of the LU bits in this entry to 1023, so there will be no recursion. (LU will not be zero)
 	 */
-	int pd_to_free_count = VMM_GET_ENTRY_LU(*pdpe);
+	int pde_to_free_count = VMM_GET_ENTRY_LU(*pdpe);
 	*pdpe = VMM_SET_ENTRY_LU(*pdpe, (size_t)1023);
 	uint64_t* pd = vmm_get_sub_table(*pdpe);
 	for(int i = 0; i < VMM_PAGE_TABLE_LENGTH; ++i)
 	{
 		/* 
 		 * If there are no more pd's to free, break out of the loop. 
-		 * This if statement not right after decrementing <pd_to_free_count> 
-		 * so it handles the case when <pd_to_free_count> is 0 before entering the loop.
+		 * This if statement not right after decrementing <pde_to_free_count> 
+		 * so it handles the case when <pde_to_free_count> is 0 before entering the loop.
 		 */
-		if(pd_to_free_count == 0)							
+		if(pde_to_free_count == 0)							
 			break;											
 
 		if(vmm_is_valid_entry(pd[i]))
 		{
-			vmm_free_pde(VMM_VADDR_SET_PD_IDX(address, i));
-			--pd_to_free_count;
+			vmm_free_pde(VMM_VADDR_SET_PDE_IDX(address, i));
+			--pde_to_free_count;
 		}
 	}
 
-	phys_addr_t pd_paddr = VMM_GET_ENTRY_TABLE(*pdpe);
-	virt_addr_t pd_vaddr = vmm_get_virtual_of(pd_paddr);
-
 	/* Free the physical block the entry points to, and mark the entry as not preset. Basicaly free it. */
+	phys_addr_t pd_paddr = VMM_GET_ENTRY_TABLE(*pdpe);
 	pmm_free(pd_paddr);
 
 	/* Free the virtual address that the physical address of the page directory was mapped to */
-	vmm_unmap_page(pd_vaddr);
+	vmm_unmap_page((virt_addr_t)pd);
 
 	*pdpe = 0llu;
 
@@ -747,36 +696,46 @@ void vmm_set_pml4e(virt_addr_t address, uint64_t entry)
 	g_vmm_pml4[pml4e_index] = entry;
 }
 
-int vmm_alloc_pml4e(virt_addr_t address, uint64_t flags)
+int vmm_free_pml4e(virt_addr_t address)
 {
 	uint64_t* pml4e = vmm_get_pml4e(address);
-	
-	phys_addr_t pdp_paddr = pmm_alloc();
-	if(pdp_paddr == (phys_addr_t)-1)
-		return ERR_OUT_OF_MEMORY;
 
-	virt_addr_t pdp_vaddr = vmm_map_physical_page(pdp_paddr, VMM_PAGE_P | VMM_PAGE_RW);
-	if(pdp_vaddr == (virt_addr_t)-1)
+	/* 
+	 * Free each pdpe under the pdp table the pml4e points to. 
+	 * The vmm_free_pdpe function will attempt to decrement the LU count in this pml4e, 
+	 * so if its zero it will call this function, to free the pdpe. As we only want to free the pd entries, without any recursion,
+	 * set the value of the LU bits in this entry to 1023, so there will be no recursion. (LU will not be zero)
+	 */
+	int pdpe_to_free_count = VMM_GET_ENTRY_LU(*pml4e);
+	*pml4e = VMM_SET_ENTRY_LU(*pml4e, (size_t)1023);
+	uint64_t* pdpt = vmm_get_sub_table(*pml4e);
+	if(pdpt == NULL)
+		return ERR_PAGE_NOT_MAPPED;
+
+	for(int i = 0; i < VMM_PAGE_TABLE_LENGTH; ++i)
 	{
-		pmm_free(pdp_paddr);
-		return ERR_OUT_OF_MEMORY;
+		/* 
+		 * If there are no more pdpe's to free, break out of the loop. 
+		 * This if statement not right after decrementing <pdpe_to_free_count> 
+		 * so it handles the case when <pdpe_to_free_count> is 0 before entering the loop.
+		 */
+		if(pdpe_to_free_count == 0)							
+			break;											
+
+		if(vmm_is_valid_entry(pdpt[i]))
+		{
+			vmm_free_pdpe(VMM_VADDR_SET_PDPE_IDX(address, i));
+			--pdpe_to_free_count;
+		}
 	}
 
-	*pml4e = VMM_CREATE_TABLE_ENTRY(flags, pdp_paddr);
-
-	return SUCCESS;
-}
-
-void vmm_free_pml4e(virt_addr_t address)
-{
-	uint64_t* pml4e = vmm_get_pml4e(address);
-
+	/* Free the physical block the entry points to, and mark the entry as not preset. Basicaly free it. */
 	phys_addr_t pdp_paddr = VMM_GET_ENTRY_TABLE(*pml4e);
-	virt_addr_t pdp_vaddr = vmm_get_virtual_of(pdp_paddr);
-
-	/* Free the physical address of the pdp. */
 	pmm_free(pdp_paddr);
 
-	/* Free the virtual address that the physical address of the pdp was mapped to. */
-	vmm_unmap_page(pdp_vaddr);
+	/* Free the virtual address that the physical address of the pdpt was mapped to */
+	vmm_unmap_page((virt_addr_t)pdpt);
+
+	*pml4e = 0llu;
+	return SUCCESS;
 }
