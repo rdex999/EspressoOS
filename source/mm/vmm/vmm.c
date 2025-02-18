@@ -586,11 +586,7 @@ int vmm_free_pde(virt_addr_t address)
 		}
 	}
 	
-	/* Free the physical block the entry points to, and mark the entry as not preset. Basicaly free it. */
-	phys_addr_t pt_paddr = VMM_GET_ENTRY_TABLE(*pde);
-	pmm_free(pt_paddr);
-
-	/* Free the virtual address that was mapped to the physical address of the page table. */
+	/* Free the virtual and physical page that was used for the page table. */
 	vmm_unmap_page((virt_addr_t)pt);
 
 	*pde = 0llu;
@@ -664,11 +660,7 @@ int vmm_free_pdpe(virt_addr_t address)
 		}
 	}
 
-	/* Free the physical block the entry points to, and mark the entry as not preset. Basicaly free it. */
-	phys_addr_t pd_paddr = VMM_GET_ENTRY_TABLE(*pdpe);
-	pmm_free(pd_paddr);
-
-	/* Free the virtual address that the physical address of the page directory was mapped to */
+	/* Free the virtual and physical page that was used for the page directory. */
 	vmm_unmap_page((virt_addr_t)pd);
 
 	*pdpe = 0llu;
@@ -729,11 +721,7 @@ int vmm_free_pml4e(virt_addr_t address)
 		}
 	}
 
-	/* Free the physical block the entry points to, and mark the entry as not preset. Basicaly free it. */
-	phys_addr_t pdp_paddr = VMM_GET_ENTRY_TABLE(*pml4e);
-	pmm_free(pdp_paddr);
-
-	/* Free the virtual address that the physical address of the pdpt was mapped to */
+	/* Free the virtual and physical page that was used for the page directory pointer table. */
 	vmm_unmap_page((virt_addr_t)pdpt);
 
 	*pml4e = 0llu;
