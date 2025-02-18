@@ -107,7 +107,7 @@ void bitmap::clear(size_t index)
 	
 	size_t entry_idx = index / BITMAP_ENTRY_BITS;
 	size_t entry_offset = index % BITMAP_ENTRY_BITS;
-	m_buffer[entry_idx] |= (bitmap_entry_t)1 << entry_offset;
+	m_buffer[entry_idx] &= ~((bitmap_entry_t)1 << entry_offset);
 
 	--m_set;
 	++m_clear;

@@ -350,48 +350,51 @@ int vmm_temp_map_init(virt_addr_t temp_map_address)
 	 * Here we can use the physical address as the virtual address, as it is promissed to be identity mapped by vmm_init_first_tables().
 	 */
 
-	uint64_t* pml4e = vmm_get_pml4e(temp_map_address);
-	uint64_t* pdp;
-	if(vmm_is_valid_entry(*pml4e))
-		pdp = (uint64_t*)VMM_GET_ENTRY_TABLE(*pml4e);
-	else
+	for(virt_addr_t vaddr = temp_map_address; vaddr < temp_map_address + VMM_PAGE_SIZE*3; vaddr += VMM_PAGE_SIZE)
 	{
-		phys_addr_t pdp_paddr = pmm_alloc();
-		if(pdp_paddr == (phys_addr_t)-1)
-			return ERR_OUT_OF_MEMORY;
-
-		*pml4e = VMM_CREATE_TABLE_ENTRY(VMM_PAGE_P | VMM_PAGE_RW, pdp_paddr);
-		pdp = (uint64_t*)pdp_paddr;		
+		uint64_t* pml4e = vmm_get_pml4e(vaddr);
+		uint64_t* pdp;
+		if(vmm_is_valid_entry(*pml4e))
+			pdp = (uint64_t*)VMM_GET_ENTRY_TABLE(*pml4e);
+		else
+		{
+			phys_addr_t pdp_paddr = pmm_alloc();
+			if(pdp_paddr == (phys_addr_t)-1)
+				return ERR_OUT_OF_MEMORY;
+	
+			*pml4e = VMM_CREATE_TABLE_ENTRY(VMM_PAGE_P | VMM_PAGE_RW, pdp_paddr);
+			pdp = (uint64_t*)pdp_paddr;		
+		}
+	
+		uint64_t* pdpe = &pdp[VMM_VADDR_PDPE_IDX(vaddr)];
+		uint64_t* pd;
+		if(vmm_is_valid_entry(*pdpe))
+			pd = (uint64_t*)VMM_GET_ENTRY_TABLE(*pdpe);
+		else
+		{
+			phys_addr_t pd_paddr = pmm_alloc();
+			if(pd_paddr == (phys_addr_t)-1)
+				return ERR_OUT_OF_MEMORY;
+			
+			*pdpe = VMM_CREATE_TABLE_ENTRY(VMM_PAGE_P | VMM_PAGE_RW, pd_paddr);
+			*pml4e = VMM_INC_ENTRY_LU(*pml4e);
+			pd = (uint64_t*)pd_paddr;
+		}
+	
+		uint64_t* pde = &pd[VMM_VADDR_PDE_IDX(vaddr)];
+		if(!vmm_is_valid_entry(*pde))
+		{
+			phys_addr_t pt_paddr = pmm_alloc();
+			if(pt_paddr == (phys_addr_t)-1)
+				return ERR_OUT_OF_MEMORY;
+			
+			*pde = VMM_CREATE_TABLE_ENTRY(VMM_PAGE_P | VMM_PAGE_RW, pt_paddr);
+			*pdpe = VMM_INC_ENTRY_LU(*pdpe);
+		}
+	
+		*pde = VMM_INC_ENTRY_LU(*pde);
 	}
-
-	uint64_t* pdpe = &pdp[VMM_VADDR_PDPE_IDX(temp_map_address)];
-	uint64_t* pd;
-	if(vmm_is_valid_entry(*pdpe))
-		pd = (uint64_t*)VMM_GET_ENTRY_TABLE(*pdpe);
-	else
-	{
-		phys_addr_t pd_paddr = pmm_alloc();
-		if(pd_paddr == (phys_addr_t)-1)
-			return ERR_OUT_OF_MEMORY;
-		
-		*pdpe = VMM_CREATE_TABLE_ENTRY(VMM_PAGE_P | VMM_PAGE_RW, pd_paddr);
-		*pml4e = VMM_INC_ENTRY_LU(*pml4e);
-		pd = (uint64_t*)pd_paddr;
-	}
-
-	uint64_t* pde = &pd[VMM_VADDR_PDE_IDX(temp_map_address)];
-	if(!vmm_is_valid_entry(*pde))
-	{
-		phys_addr_t pt_paddr = pmm_alloc();
-		if(pt_paddr == (phys_addr_t)-1)
-			return ERR_OUT_OF_MEMORY;
-		
-		*pde = VMM_CREATE_TABLE_ENTRY(VMM_PAGE_P | VMM_PAGE_RW, pt_paddr);
-		*pdpe = VMM_INC_ENTRY_LU(*pdpe);
-	}
-
-	*pde = VMM_INC_ENTRY_LU(*pde);
-	vmm_mark_alloc_virtual_pages(temp_map_address, 0 + 3);
+	vmm_mark_alloc_virtual_pages(temp_map_address, 3);
 	s_vmm_temp_map = temp_map_address;
 	return SUCCESS;
 }

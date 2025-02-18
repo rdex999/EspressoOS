@@ -123,6 +123,7 @@ virt_addr_t vmm_alloc_page(uint64_t flags);
 /* Allocates <count> memory blocks of <VMM_PAGE_SIZE>, returns their virtual address. Returns -1 on failure. */
 virt_addr_t vmm_alloc_pages(uint64_t flags, size_t count);
 
+
 /* 
 * Unmaps a virtual address. 
 * Frees its corresponding physical address using the physical memory manager. Returns 0 on success, an error code otherwise.
@@ -134,6 +135,10 @@ int vmm_unmap_page(virt_addr_t address);
 * Frees their corresponding physical address using the physical memory manager. Returns 0 on success, an error code otherwise.
 */
 int vmm_unmap_pages(virt_addr_t address, size_t count);
+
+/* Free pages that were allocated with vmm_alloc_page/s. */
+inline int vmm_free_page(virt_addr_t address) 					{ return vmm_unmap_page(address); }
+inline int vmm_free_pages(virt_addr_t address, size_t count) 	{ return vmm_unmap_pages(address, count); }
 
 /* Returns the physical address of the given virtual address. Returns -1 on failure. */
 phys_addr_t vmm_get_physical_of(virt_addr_t address);
