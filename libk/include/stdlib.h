@@ -15,36 +15,9 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "kernel/kernel.h"
+#pragma once
 
-#include <string.h>
-#include <stdlib.h>
-#include "mm/pmm/pmm.h"
-#include "mm/vmm/vmm.h"
+#include <stddef.h>
+#include <stdint.h>
 
-#define VIDEO ((uint32_t*)0xA0000)
-
-#ifdef __cplusplus
-	extern "C"
-#endif
-void kernel_main(multiboot_info_t* mbd)
-{
-	multiboot_tag_mmap_t* mmap = (multiboot_tag_mmap_t*)mbd->find_tag(MULTIBOOT_TAG_TYPE_MMAP);
-	if(mmap == NULL)	/* Always do null checks people, you dont want a damn headache. */
-	{
-		while(1) 
-		{ 
-			asm volatile("cli"); 
-			asm volatile("hlt");
-		}
-	}
-
-	pmm_init(mmap);
-	vmm_init();
-
-	while(1)
-	{
-		asm volatile("cli");
-		asm volatile("hlt");
-	}
-} 
+void* malloc(size_t size);

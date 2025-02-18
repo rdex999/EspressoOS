@@ -17,29 +17,30 @@
 
 include config/build.mk
 
-QEMU=qemu-system-x86_64
-QEMU_FLAGS=-m 8G -vga vmware -L /usr/share/OVMF/ -pflash /usr/share/OVMF/x64/OVMF_CODE.4m.fd
-ISO=dist/EspressoOS.iso
-DISK_IMG=dist/EspressoOS.img
-DISK_IMG_SIZE=$$((1 * 1024**3))
-DEBUG_BREAKPOINT=kernel_main
+QEMU:=qemu-system-x86_64
+QEMU_FLAGS:=-m 8G -vga vmware -L /usr/share/OVMF/ -pflash /usr/share/OVMF/x64/OVMF_CODE.4m.fd
+ISO:=dist/EspressoOS.iso
+DISK_IMG:=dist/EspressoOS.img
+DISK_IMG_SIZE:=$$((1 * 1024**3))
+DEBUG_BREAKPOINT:=kernel_main
 
-KERNEL_C_SOURCES=$(shell find $(SRC) -name *.c)
-KERNEL_C_HEADERS=$(shell find $(SRC)/include -name *.h)
-KERNEL_ASM_SOURCES=$(shell find $(SRC) -name *.asm)
+KERNEL_C_SOURCES:=$(shell find $(SRC) -name *.c)
+KERNEL_C_HEADERS:=$(shell find $(SRC)/include -name *.h)
+KERNEL_ASM_SOURCES:=$(shell find $(SRC) -name *.asm)
 
-KERNEL_C_OBJECTS=$(patsubst $(SRC)/%.c,$(BLD)/%.obj,$(KERNEL_C_SOURCES))
-KERNEL_ASM_OBJECTS=$(patsubst $(SRC)/%.asm,$(BLD)/%.obj,$(KERNEL_ASM_SOURCES))
+KERNEL_C_OBJECTS:=$(patsubst $(SRC)/%.c,$(BLD)/%.obj,$(KERNEL_C_SOURCES))
+KERNEL_ASM_OBJECTS:=$(patsubst $(SRC)/%.asm,$(BLD)/%.obj,$(KERNEL_ASM_SOURCES))
 
-LIBK_C_SOURCES=$(shell find libk/source -name *.c)
-LIBK_C_HEADERS=$(shell find libk/include -name *.h)
-LIBK_ASM_SOURCES=$(shell find libk/source -name *.asm)
+LIBK_C_SOURCES:=$(shell find libk/source -name *.c)
+LIBK_C_HEADERS:=$(shell find libk/include -name *.h)
+LIBK_C_PRIVATE_HEADERS:=$(shell find libk/source/include -name *.h)
+LIBK_ASM_SOURCES:=$(shell find libk/source -name *.asm)
 
-LIBK_C_OBJECTS=$(patsubst libk/source/%.c,$(BLD)/libk/%.obj,$(LIBK_C_SOURCES))
-LIBK_ASM_OBJECTS=$(patsubst libk/source/%.asm,$(BLD)/libk/%.obj,$(LIBK_ASM_SOURCES))
-LIBK_OBJECTS=$(LIBK_C_OBJECTS) $(LIBK_ASM_OBJECTS)
+LIBK_C_OBJECTS:=$(patsubst libk/source/%.c,$(BLD)/libk/%.obj,$(LIBK_C_SOURCES))
+LIBK_ASM_OBJECTS:=$(patsubst libk/source/%.asm,$(BLD)/libk/%.obj,$(LIBK_ASM_SOURCES))
+LIBK_OBJECTS:=$(LIBK_C_OBJECTS) $(LIBK_ASM_OBJECTS)
 
-KERNEL_OBJECTS=$(KERNEL_C_OBJECTS) $(KERNEL_ASM_OBJECTS) $(LIBK_OBJECTS)
+KERNEL_OBJECTS:=$(KERNEL_C_OBJECTS) $(KERNEL_ASM_OBJECTS) $(LIBK_OBJECTS)
 
 .DEFAULT_GOAL=iso
 
@@ -125,9 +126,9 @@ $(BLD)/%.obj: $(SRC)/%.asm $(shell find $(dir $<) -name *.inc)
 	$(call prep_compile,$@,$<)
 	@$(AS) $(ASFLAGS) -o $@ $<
 
-$(BLD)/libk/%.obj: libk/source/%.c $(LIBK_C_HEADERS)
+$(BLD)/libk/%.obj: libk/source/%.c $(LIBK_C_HEADERS) $(LIBK_C_PRIVATE_HEADERS)
 	$(call prep_compile,$@,$<)
-	@$(CC) $(CFLAGS) -o $@ $<
+	@$(CC) $(CFLAGS) -I libk/source/include -o $@ $<
 
 clean:
 	@rm -rf $(BLD)/* dist/* iso_disk
