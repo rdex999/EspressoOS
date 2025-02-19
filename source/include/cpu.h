@@ -34,6 +34,16 @@ inline void write_cr3(uint64_t value)
 	asm volatile("mov %0, %%cr3"
 		:
 		: "r"(value)
+		: "memory"
 	);
 
+}
+
+inline void tlb_native_flush_page(void* virtual_address)
+{
+	asm volatile("invlpg (%0)"
+		:
+		: "r"(virtual_address)
+		: "memory"
+	);
 }

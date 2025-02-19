@@ -518,6 +518,15 @@ int vmm_free_pte(virt_addr_t address)
 	vmm_set_virtual_of(frame, (virt_addr_t)0);
 	vmm_mark_free_virtual_page(address);
 	*pte = 0llu;
+	
+	/* 
+	 * After mapping a page, the CPU creates an entry for it in the TLB. So, after setting the PTE to zero,
+	 * we also need to flush the TLB entry for that virtual address so that when trying to access the virtual address,
+	 * the CPU wont just look in the TLB because the TLB entry will not exist, so the CPU will look in the page table and see
+	 * that the actual PTE is not preset, so it will page-fault. 
+	 * (This is me banging my head against the wall trying to figure out why the fuck wont it page-fault)
+	 */
+	tlb_native_flush_page((void*)address);		
 
 	/* 
 	 * Decrease the amount of used pt entries, in the pd entry. (LU bits). 
