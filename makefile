@@ -131,7 +131,7 @@ $(BLD)/libk/%.obj: libk/source/%.c $(LIBK_C_HEADERS) $(LIBK_C_PRIVATE_HEADERS)
 	@$(CC) $(CFLAGS) -I libk/source/include -o $@ $<
 
 clean:
-	@rm -rf $(BLD)/* dist/* iso_disk
+	@rm -rf $(BLD) dist iso_disk
 
 runimage: image
 	$(QEMU) $(QEMU_FLAGS) -drive file=$(DISK_IMG)

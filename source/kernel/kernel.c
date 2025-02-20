@@ -41,6 +41,10 @@ void kernel_main(multiboot_info_t* mbd)
 	pmm_init(mmap);
 	vmm_init();
 
+	uint8_t* b1 = (uint8_t*)malloc(40);
+	uint8_t* b2 = (uint8_t*)malloc(90);
+	uint8_t* b3 = (uint8_t*)malloc(20);
+
 	while(1)
 	{
 		asm volatile("cli");
