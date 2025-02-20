@@ -16,3 +16,24 @@
  */
 
 #pragma once
+
+#include <stddef.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include "mm/vmm/vmm.h"
+#include "common.h"
+
+#define BLOCK_NEXT_IN_PAGE(block) 	((block_meta_t*)((uint64_t)(block) + (block)->size + sizeof(block_meta_t)))
+#define IS_NEXT_IN_PAGE(block) 		(BLOCK_NEXT_IN_PAGE(block) == (block)->next)
+#define BLOCK_START(block)			((block_meta_t*)(block) + 1)
+
+typedef struct block_meta
+{
+	struct block_meta* next;
+	struct block_meta* prev;
+	bool free;
+	size_t size;				/* The size of the memory block, not including this structure. */
+} block_meta_t;
+
+/* Merge free blocks after <after>. Returns a pointer to the inserted block describing the free memory region. */
+block_meta_t* alloc_merge_free(block_meta_t* after);

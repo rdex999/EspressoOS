@@ -16,7 +16,6 @@
  */
 
 #include "kernel/kernel.h"
-
 #include <string.h>
 #include <stdlib.h>
 #include "mm/pmm/pmm.h"
@@ -41,17 +40,6 @@ void kernel_main(multiboot_info_t* mbd)
 
 	pmm_init(mmap);
 	vmm_init();
-
-	virt_addr_t address = vmm_alloc_page(VMM_PAGE_P | VMM_PAGE_RW);
-
-	*(int*)address = 420;
-	int value = *(int*)address;
-
-	int status = vmm_free_page(address);
-
-	/* Will cause a page fault */	
-	// *(int*)address = 600;
-	// value = *(int*)address;
 
 	while(1)
 	{

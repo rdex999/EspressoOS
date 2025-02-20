@@ -47,7 +47,7 @@ KERNEL_OBJECTS:=$(KERNEL_C_OBJECTS) $(KERNEL_ASM_OBJECTS) $(LIBK_OBJECTS)
 .PHONY: all image iso clean rundisk runiso debugimage debugiso
 
 all:
-	@# None
+	@mkdir -p dist
 
 # This rule requires root privileges for mounting and formating disk image partitions
 image: all $(DISK_IMG)
