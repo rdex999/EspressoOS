@@ -17,3 +17,20 @@
 
 #pragma once
 
+#include <stdint.h>
+
+typedef struct acpi_rsdp {
+	char signature[8];
+	uint8_t checksum;
+	char oem_id[6];
+	uint8_t revision;
+	uint32_t rsdt_address;
+} __attribute__((packed)) acpi_rsdp_t;
+
+typedef struct acpi_xsdp {
+	acpi_rsdp_t rsdp;
+	uint32_t length;
+	uint64_t xsdt_address;
+	uint8_t extended_checksum;
+	uint8_t reserved[3];
+} __attribute__((packed)) acpi_xsdp_t;
