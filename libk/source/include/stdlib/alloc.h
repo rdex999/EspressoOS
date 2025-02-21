@@ -36,8 +36,8 @@ typedef struct block_meta
 	size_t size;				/* The size of the memory block, not including this structure. */
 } block_meta_t;
 
-/* Merge free blocks after <after>. Returns a pointer to the inserted block describing the free memory region. */
-block_meta_t* alloc_merge_free(block_meta_t* after);
+/* Merge free blocks starting from <after>. */
+void alloc_merge_free(block_meta_t* block);
 
 /* Allocate <block>, shrink it to <size> and merge free regions. */
 void alloc_alloc_block(block_meta_t* block, size_t size);

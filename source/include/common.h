@@ -27,6 +27,7 @@ extern char _kernel_end;
  */
 #define ALIGN_UP(address, align) 		(((address) + ((align) - 1)) & ~((align) - 1))
 #define ALIGN_DOWN(num, align)			((num) - (num) % (align))
+#define IS_ALIGNED(num, align)			((num) % (align) == 0)
 #define DIV_ROUND_UP(num, denominator) 	(((num) + (denominator) - 1) / (denominator))
 #define KERNEL_END 						((void*)&_kernel_end)
 #define MIN(a, b) 						((a) < (b) ? (a) : (b))

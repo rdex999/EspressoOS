@@ -30,22 +30,25 @@ void kernel_main(multiboot_info_t* mbd)
 {
 	multiboot_tag_mmap_t* mmap = (multiboot_tag_mmap_t*)mbd->find_tag(MULTIBOOT_TAG_TYPE_MMAP);
 	if(mmap == NULL)	/* Always do null checks people, you dont want a damn headache. */
-	{
-		while(1) 
-		{ 
-			asm volatile("cli"); 
-			asm volatile("hlt");
-		}
-	}
+		while(true) { asm volatile("cli"); asm volatile("hlt"); }
 
 	pmm_init(mmap);
 	vmm_init();
 
+	/* ITS FOR TESTING */
 	uint8_t* b1 = (uint8_t*)malloc(40);
 	uint8_t* b2 = (uint8_t*)malloc(90);
 	uint8_t* b3 = (uint8_t*)malloc(20);
 	uint8_t* b4 = (uint8_t*)malloc(3700);
 	uint64_t* b5 = (uint64_t*)malloc(5000);
+	uint64_t* b6 = (uint64_t*)malloc(80);
+
+	free(b5);
+	free(b6);
+	free(b4);
+	free(b3);
+	free(b2);
+	free(b1);
 
 	while(1)
 	{

@@ -83,41 +83,72 @@ void* malloc(size_t size)
 	alloc_alloc_block(new_block, size);
 
 	return BLOCK_START(new_block);
-} 
+}
 
-block_meta_t* alloc_merge_free(block_meta_t* after)
+void free(void* ptr)
 {
-	block_meta_t* block = after->next;
-	if(block == NULL)
-		return NULL;
+	/* 
+	 * So, travel the list backwards, and find the first free block (on the same chunk/pages), so we can merge them.
+	 * After merging, check if the free block is aligned to 4KiB and its size is bigger than 4KiB, if so, free the page/s.
+	 * If its not aligned, check if it covers an aligned page 
+	 * (meaning its size is big enough to cover the rest of the current page, on the whole next page/s), 
+	 * If it does cover other pages, free them.
+	 */
 
-	if(!IS_NEXT_IN_PAGE(after))
-		return NULL;
+	if(ptr == NULL)
+		return;
 
-	block_meta_t* last = block;
-	while(block && block->free)
+	block_meta_t* block = (block_meta_t*)((uint64_t)ptr - sizeof(block_meta_t));
+	block->free = true;
+
+	block_meta_t* first_free = block;
+	while(first_free->prev != NULL && first_free->prev->free && IS_NEXT_IN_PAGE(first_free->prev))
+		first_free = first_free->prev;
+
+	alloc_merge_free(first_free);
+
+	uint64_t until_next_page = ALIGN_UP((uint64_t)first_free, VMM_PAGE_SIZE) - (uint64_t)first_free;
+	if(IS_ALIGNED((uint64_t)first_free, VMM_PAGE_SIZE) && first_free->size + sizeof(block_meta_t) >= VMM_PAGE_SIZE)
 	{
-		last = block;
+		block_meta_t* prev = first_free->prev;
+		if(prev != NULL)
+			prev->next = first_free->next;
+		else
+			s_first_block = first_free->next;
 
-		if(!IS_NEXT_IN_PAGE(block))
+		size_t pages = (first_free->size + sizeof(block_meta_t)) / VMM_PAGE_SIZE;
+		vmm_free_pages((virt_addr_t)first_free, pages);
+	} 
+	else if(first_free->size + sizeof(block_meta_t) > VMM_PAGE_SIZE + until_next_page)
+	{
+		void* next_page = (void*)((uint64_t)first_free + until_next_page);
+		size_t pages = DIV_ROUND_UP(first_free->size - until_next_page, VMM_PAGE_SIZE);
+		first_free->size = until_next_page - sizeof(block_meta_t);
+		vmm_free_pages((virt_addr_t)next_page, pages);
+	}
+}
+
+void alloc_merge_free(block_meta_t* block)
+{
+	if(block == NULL || (block->next != NULL && !IS_NEXT_IN_PAGE(block)) || !block->free)
+		return;
+	
+	block_meta_t* current = block;
+	block_meta_t* last_free = block;
+	while(current != NULL && current->free)
+	{
+		last_free = current;
+
+		if(current->next != NULL && !IS_NEXT_IN_PAGE(current))
 			break;
 		
-		block = block->next;
+		current = current->next;
 	}
 
-	block_meta_t* new_block = BLOCK_NEXT_IN_PAGE(after);
-	after->next = new_block;
-	*new_block = {
-		.next = block,
-		.prev = after,
-		.free = true,
-		.size = (uint64_t)BLOCK_END(last) - (uint64_t)BLOCK_START(new_block)
-	};
-
-	if(block != NULL)
-		block->prev = new_block;
-
-	return new_block;
+	block->next = current;
+	block->size = (uint64_t)BLOCK_END(last_free) - (uint64_t)BLOCK_START(block);
+	if(current != NULL)
+		current->prev = block;
 }
 
 void alloc_alloc_block(block_meta_t* block, size_t size)
@@ -169,5 +200,5 @@ void alloc_alloc_block(block_meta_t* block, size_t size)
 	old_next->prev = new_next;
 
 	/* Because we just inserted a free block, there might be a free block after that, so in case there is merge them. */
-	alloc_merge_free(block);
+	alloc_merge_free(block->next);
 }
