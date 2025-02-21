@@ -26,28 +26,20 @@ void* malloc(size_t size)
 	
 	if(s_first_block == NULL)
 	{
-		size_t pages = DIV_ROUND_UP(size + sizeof(block_meta_t), VMM_PAGE_SIZE);
+		size_t chunk_size = ALIGN_UP(size, VMM_PAGE_SIZE);
+		size_t pages = chunk_size / VMM_PAGE_SIZE;
+
 		s_first_block = (block_meta_t*)vmm_alloc_pages(VMM_PAGE_P | VMM_PAGE_RW, pages);
 		if((virt_addr_t)s_first_block == (virt_addr_t)-1)
 			return NULL;
 
-		s_first_block->prev = NULL;
-		s_first_block->free = false;
-		s_first_block->size = size;
-		if(size < pages * VMM_PAGE_SIZE)
-		{
-			block_meta_t* next = BLOCK_NEXT_IN_PAGE(s_first_block);
-			s_first_block->next = next;
-			next->prev = s_first_block;
-			*next = {
-				.next = NULL,
-				.prev = s_first_block,
-				.free = true,
-				.size = (uint64_t)s_first_block + pages * VMM_PAGE_SIZE - (uint64_t)BLOCK_START(next)
-			};
-		}
-		else
-			s_first_block->next = NULL;
+		*s_first_block = {
+			.next = NULL,
+			.prev = NULL,
+			.free = true,
+			.size = chunk_size - sizeof(block_meta_t)
+		};
+		alloc_alloc_block(s_first_block, size);
 		
 		return BLOCK_START(s_first_block);
 	}
@@ -122,7 +114,7 @@ void free(void* ptr)
 	else if(first_free->size + sizeof(block_meta_t) > VMM_PAGE_SIZE + until_next_page)
 	{
 		void* next_page = (void*)((uint64_t)first_free + until_next_page);
-		size_t pages = DIV_ROUND_UP(first_free->size - until_next_page, VMM_PAGE_SIZE);
+		size_t pages = ((first_free->size + sizeof(block_meta_t)) - until_next_page) / VMM_PAGE_SIZE;
 		first_free->size = until_next_page - sizeof(block_meta_t);
 		vmm_free_pages((virt_addr_t)next_page, pages);
 	}

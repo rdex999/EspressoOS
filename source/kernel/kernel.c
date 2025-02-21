@@ -50,9 +50,5 @@ void kernel_main(multiboot_info_t* mbd)
 	free(b2);
 	free(b1);
 
-	while(1)
-	{
-		asm volatile("cli");
-		asm volatile("hlt");
-	}
+	while(true) { asm volatile("cli"); asm volatile("hlt"); }
 } 
