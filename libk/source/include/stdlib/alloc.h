@@ -26,6 +26,7 @@
 #define BLOCK_NEXT_IN_PAGE(block) 	((block_meta_t*)((uint64_t)(block) + (block)->size + sizeof(block_meta_t)))
 #define IS_NEXT_IN_PAGE(block) 		(BLOCK_NEXT_IN_PAGE(block) == (block)->next)
 #define BLOCK_START(block)			((block_meta_t*)(block) + 1)
+#define BLOCK_END(block)			((uint64_t)BLOCK_START(block) + (block)->size)
 
 typedef struct block_meta
 {

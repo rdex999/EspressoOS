@@ -53,7 +53,7 @@ void* malloc(size_t size)
 	}
 	
 	block_meta_t* block = s_first_block;
-	// block_meta_t* last_block = block;
+	block_meta_t* last_block = block;
 	while(block)
 	{
 		if(block->free && block->size >= size)
@@ -62,10 +62,27 @@ void* malloc(size_t size)
 			return BLOCK_START(block);
 		}
 
-		// last_block = block;
+		last_block = block;
 		block = block->next;
 	}
-	return NULL;
+
+	size_t chunk_size = ALIGN_UP(size, VMM_PAGE_SIZE);
+	size_t pages = chunk_size / VMM_PAGE_SIZE;
+	block_meta_t* new_block = (block_meta_t*)vmm_alloc_pages(VMM_PAGE_P | VMM_PAGE_RW, pages);
+	if((virt_addr_t)new_block == (virt_addr_t)-1)
+		return NULL;
+
+	last_block->next = new_block;
+	*new_block = {
+		.next = NULL,
+		.prev = last_block,
+		.free = true,
+		.size = chunk_size - sizeof(block_meta_t)
+	};
+
+	alloc_alloc_block(new_block, size);
+
+	return BLOCK_START(new_block);
 } 
 
 block_meta_t* alloc_merge_free(block_meta_t* after)
@@ -80,19 +97,25 @@ block_meta_t* alloc_merge_free(block_meta_t* after)
 	block_meta_t* last = block;
 	while(block && block->free)
 	{
+		last = block;
+
 		if(!IS_NEXT_IN_PAGE(block))
 			break;
 		
-		last = block;
 		block = block->next;
 	}
 
 	block_meta_t* new_block = BLOCK_NEXT_IN_PAGE(after);
 	after->next = new_block;
-	new_block->prev = after;
-	new_block->free = true;
-	new_block->size = ((uint64_t)last - (uint64_t)BLOCK_START(new_block));
-	last->prev = new_block;
+	*new_block = {
+		.next = block,
+		.prev = after,
+		.free = true,
+		.size = (uint64_t)BLOCK_END(last) - (uint64_t)BLOCK_START(new_block)
+	};
+
+	if(block != NULL)
+		block->prev = new_block;
 
 	return new_block;
 }
