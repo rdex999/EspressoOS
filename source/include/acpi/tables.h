@@ -19,6 +19,10 @@
 
 #include <stdint.h>
 
+#define ACPI_RSDP_SIGNATURE "RSD PTR "
+#define ACPI_RSDT_SIGNATURE "RSDT"
+#define ACPI_XSDT_SIGNATURE "XSDT"
+
 typedef struct acpi_rsdp {
 	char signature[8];
 	uint8_t checksum;
@@ -29,7 +33,7 @@ typedef struct acpi_rsdp {
 
 typedef struct acpi_xsdp {
 	acpi_rsdp_t rsdp;
-	uint32_t length;
+	uint32_t size;
 	uint64_t xsdt_address;
 	uint8_t extended_checksum;
 	uint8_t reserved[3];
@@ -37,7 +41,7 @@ typedef struct acpi_xsdp {
 
 typedef struct acpi_sdt_header {
 	char signature[4];
-	uint32_t length;
+	uint32_t size;
 	uint8_t revision;
 	uint8_t checksum;
 	char oem_id[6];

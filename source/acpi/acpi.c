@@ -17,14 +17,14 @@
 
 #include "acpi/acpi.h"
 
-static void* s_acpi_rsdt = NULL;
+static void* s_acpi_root_sdt = NULL;
 
 int acpi_init(multiboot_info_t* mbd)
 {
-	return acpi_init_rsdp(mbd);
+	return acpi_init_rsdt(mbd);
 }
 
-int acpi_init_rsdp(multiboot_info_t* mbd)
+int acpi_init_rsdt(multiboot_info_t* mbd)
 {
 	multiboot_tag_old_acpi_t* old_tag = (multiboot_tag_old_acpi_t*)mbd->find_tag(MULTIBOOT_TAG_TYPE_ACPI_OLD);
 	multiboot_tag_new_acpi_t* new_tag = (multiboot_tag_new_acpi_t*)mbd->find_tag(MULTIBOOT_TAG_TYPE_ACPI_NEW);
@@ -43,10 +43,15 @@ int acpi_init_rsdp(multiboot_info_t* mbd)
 		if(!acpi_is_table_valid((uint8_t*)xsdp + sizeof(acpi_rsdp_t), sizeof(acpi_xsdp_t) - sizeof(acpi_rsdp_t)))
 			return ERR_ACPI_TABLE_CHECKSUM;
 
-		/* TODO: Check the signature of the xsdp */
+		if(memcmp(xsdp->rsdp.signature, ACPI_RSDP_SIGNATURE, 8) != 0)
+			return ERR_ACPI_RSDP_NOT_FOUND;
 
-		s_acpi_rsdt = (void*)xsdp->xsdt_address;
-		return SUCCESS;
+		int status = acpi_map_sdt(xsdp->xsdt_address, &s_acpi_root_sdt, NULL);
+		if(status != SUCCESS)
+			return status;
+
+		if(memcmp(((acpi_xsdt_t*)s_acpi_root_sdt)->header.signature, ACPI_XSDT_SIGNATURE, 4) != 0)
+			return ERR_ACPI_RSDT_NOT_FOUND;
 	}
 	/* If the old_tag is not NULL and the RSDP table it points to is ACPI V1 */
 	else if(old_tag && ((acpi_rsdp_t*)old_tag->rsdp)->revision == 0)
@@ -55,12 +60,65 @@ int acpi_init_rsdp(multiboot_info_t* mbd)
 
 		if(!acpi_is_table_valid(rsdp, sizeof(acpi_rsdp_t)))
 			return ERR_ACPI_TABLE_CHECKSUM;
+	
+		if(memcmp(rsdp->signature, ACPI_RSDP_SIGNATURE, 8) != 0)
+			return ERR_ACPI_RSDP_NOT_FOUND;			
+
+		int status = acpi_map_sdt((phys_addr_t)rsdp->rsdt_address & 0xFFFFFFFF, &s_acpi_root_sdt, NULL);
+		if(status != SUCCESS)
+			return status;
+
+		if(memcmp(((acpi_rsdt_t*)s_acpi_root_sdt)->header.signature, ACPI_RSDT_SIGNATURE, 4) != 0)
+			return ERR_ACPI_RSDT_NOT_FOUND;
+	}
+	else
+		return ERR_ACPI_RSDP_NOT_FOUND;
+
+	if(!acpi_is_table_valid(s_acpi_root_sdt, ((acpi_rsdt_t*)s_acpi_root_sdt)->header.size))
+		return ERR_ACPI_TABLE_CHECKSUM;
+
+	return SUCCESS;
+}
+
+int acpi_map_sdt(phys_addr_t sdt, void** mapped_sdt, size_t* page_count)
+{
+	/* 
+	 * The actual type of the SDT is unknown for know, but we know each SDT has a header, 
+	 * which containes the size of the whole SDT.
+	 * So, map the physical address of the SDT, and use just enough pages so we can access the SDT header.
+	 * Then, using the mapped address access the header and get the size of the whole SDT.
+	 * If we need to map more pages to cover the full size, do it. If not, dont.
+	 */
+
+	size_t pages = VMM_ADDRESS_SIZE_PAGES(sdt, sizeof(acpi_sdt_header_t));
+	virt_addr_t mapped_pages = vmm_map_physical_pages(sdt, VMM_PAGE_P | VMM_PAGE_RW, pages);
+	if(mapped_pages == (virt_addr_t)-1)
+		return ERR_OUT_OF_MEMORY;
+
+	acpi_sdt_header_t* sdt_header = (acpi_sdt_header_t*)(mapped_pages + sdt % VMM_PAGE_SIZE);
+	if(pages * VMM_PAGE_SIZE - sdt % VMM_PAGE_SIZE < sdt_header->size)
+	{
+		size_t sdt_size = sdt_header->size;
+
+		int status = vmm_unmap_pages(mapped_pages, pages);
+		if(status != SUCCESS)
+			return status;
+
+		pages = VMM_ADDRESS_SIZE_PAGES(sdt, sdt_size);
+		mapped_pages = vmm_map_physical_pages(sdt, VMM_PAGE_P | VMM_PAGE_RW, pages);
+		if(mapped_pages == (virt_addr_t)-1)
+			return ERR_OUT_OF_MEMORY;
 		
-		s_acpi_rsdt = (void*)((uint64_t)rsdp->rsdt_address && 0xFFFFFFFF);
-		return SUCCESS;
+		sdt_header = (acpi_sdt_header_t*)(mapped_pages + sdt % VMM_PAGE_SIZE);
 	}
 
-	return ERR_ACPI_TABLE_CHECKSUM;
+	if(mapped_sdt)
+		*mapped_sdt = sdt_header;
+	
+	if(page_count)
+		*page_count = pages;
+
+	return SUCCESS;
 }
 
 bool acpi_is_table_valid(void* table, size_t size)

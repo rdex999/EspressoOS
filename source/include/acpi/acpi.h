@@ -19,6 +19,8 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <string.h>
+#include "mm/vmm/vmm.h"
 #include "multiboot.h"
 #include "acpi/tables.h"
 #include "error.h"
@@ -26,8 +28,16 @@
 /* Initializes ACPI and finds tables. Returns 0 on success, an error code otherwise. */
 int acpi_init(multiboot_info_t* mbd);
 
-/* Find the rsdp/xsdp, and set s_acpi_rsdp to point to it. Returns 0 on success, an error code otherwise. */
-int acpi_init_rsdp(multiboot_info_t* mbd);
+/* Find the rsdp/xsdp, and set s_acpi_root_sdt to point to it. Returns 0 on success, an error code otherwise. */
+int acpi_init_rsdt(multiboot_info_t* mbd);
+
+/* 
+ * Maps the physical address of an SDT to a virtual address. 
+ * Writes the virtual address of the SDT into <mapped_sdt>.
+ * Writes the amount of allocated pages into <page_count>
+ * Returns 0 on success, an error code otherwise.
+ */
+int acpi_map_sdt(phys_addr_t sdt, void** mapped_sdt, size_t* page_count);
 
 /* 
  * Find an SDT table with the given sugnature. 

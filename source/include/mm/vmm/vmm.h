@@ -29,8 +29,11 @@ extern bitmap g_vmm_alloc_map;		/* Each entry specifies a page. Keeps track of w
 
 typedef uint64_t virt_addr_t;
 
-#define VMM_PAGE_SIZE 				PMM_BLOCK_SIZE
-#define VMM_PAGE_TABLE_LENGTH 		512
+#define VMM_PAGE_SIZE 							PMM_BLOCK_SIZE
+#define VMM_PAGE_TABLE_LENGTH 					512
+
+/* Amount of pages needed to map <address> of <size> bytes. */
+#define VMM_ADDRESS_SIZE_PAGES(address, size) 	(((size) + (address) % VMM_PAGE_SIZE + VMM_PAGE_SIZE - 1) / VMM_PAGE_SIZE)
 
 /* 
  * Reverse memory mapping. Maps physical memory to virtual memory, using 4KiB memory blocks.
