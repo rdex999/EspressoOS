@@ -23,7 +23,8 @@
 #define ACPI_RSDT_SIGNATURE "RSDT"
 #define ACPI_XSDT_SIGNATURE "XSDT"
 
-typedef struct acpi_rsdp {
+typedef struct acpi_rsdp 
+{
 	char signature[8];
 	uint8_t checksum;
 	char oem_id[6];
@@ -31,7 +32,8 @@ typedef struct acpi_rsdp {
 	uint32_t rsdt_address;
 } __attribute__((packed)) acpi_rsdp_t;
 
-typedef struct acpi_xsdp {
+typedef struct acpi_xsdp 
+{
 	acpi_rsdp_t rsdp;
 	uint32_t size;
 	uint64_t xsdt_address;
@@ -39,7 +41,8 @@ typedef struct acpi_xsdp {
 	uint8_t reserved[3];
 } __attribute__((packed)) acpi_xsdp_t;
 
-typedef struct acpi_sdt_header {
+typedef struct acpi_sdt_header 
+{
 	char signature[4];
 	uint32_t size;
 	uint8_t revision;
@@ -51,12 +54,28 @@ typedef struct acpi_sdt_header {
 	uint32_t creator_revision;
 } __attribute__((packed)) acpi_sdt_header_t;
 
-typedef struct acpi_rsdt {
+typedef struct acpi_rsdt 
+{
 	acpi_sdt_header_t header;
 	uint32_t sdt_pointers[];				/* An array of 32bit physical addresses, each address points to some SDT. */
 } __attribute__((packed)) acpi_rsdt_t;
 
-typedef struct acpi_xsdt {
+typedef struct acpi_xsdt 
+{
 	acpi_sdt_header_t header;
 	uint64_t sdt_pointers[]; 				/* An array of 64bit physical addresses, each address points to some SDT. */
 } __attribute__((packed)) acpi_xsdt_t;
+
+typedef struct acpi_mcfg 
+{
+	acpi_sdt_header_t header;
+	uint8_t reserved[8];
+	struct 
+	{
+		uint64_t base_address;
+		uint16_t segment_group_number;
+		uint8_t start_bus_number;
+		uint8_t end_bus_number;
+		uint8_t reserved[4];
+	} __attribute__((packed)) configurations[];
+} __attribute__((packed)) acpi_mcfg_t;

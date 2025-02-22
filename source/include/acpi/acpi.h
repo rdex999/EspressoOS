@@ -22,6 +22,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include "mm/vmm/vmm.h"
+#include "mm/pmm/pmm.h"
 #include "multiboot.h"
 #include "acpi/tables.h"
 #include "error.h"

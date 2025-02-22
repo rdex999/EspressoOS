@@ -131,8 +131,15 @@ int acpi_unmap_sdt(void* mapped_sdt)
 	if(!mapped_sdt)
 		return ERR_INVALID_PARAMETER;
 
+	phys_addr_t sdt = vmm_get_physical_of((virt_addr_t)mapped_sdt);
+
 	size_t pages = VMM_ADDRESS_SIZE_PAGES((virt_addr_t)mapped_sdt, ((acpi_sdt_header_t*)mapped_sdt)->size);
-	return vmm_unmap_pages((virt_addr_t)mapped_sdt, pages);
+	int status = vmm_unmap_pages((virt_addr_t)mapped_sdt, pages);
+	if(status != SUCCESS)
+		return status;
+
+	pmm_alloc_address(sdt, pages);	/* This physical memory chunk must not be used - its a damn ACPI table its dangerous. */
+	return SUCCESS;
 }
 
 int acpi_find_table(const char* signature, void** table, size_t* page_count)
@@ -159,7 +166,7 @@ int acpi_find_table(const char* signature, void** table, size_t* page_count)
 				*page_count = pages;
 				return SUCCESS;
 			}
-			status = vmm_unmap_pages((virt_addr_t)sdt, pages);
+			status = acpi_unmap_sdt(sdt);
 			if(status != SUCCESS)
 				return status;
 		}

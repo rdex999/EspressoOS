@@ -37,7 +37,7 @@ void kernel_main(multiboot_info_t* mbd)
 	vmm_init();
 	acpi_init(mbd);
 
-	acpi_sdt_header_t* mcfg = (acpi_sdt_header_t*)acpi_find_table_copy("MCFG");
+	acpi_mcfg_t* mcfg = (acpi_mcfg_t*)acpi_find_table_copy("MCFG");
 	free(mcfg);
 
 	while(true) { asm volatile("cli"); asm volatile("hlt"); }
