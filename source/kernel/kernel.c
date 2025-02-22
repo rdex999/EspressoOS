@@ -41,5 +41,7 @@ void kernel_main(multiboot_info_t* mbd)
 	size_t pages;
 	int status = acpi_find_table("MCFG", (void**)&mcfg, &pages);
 
+	status = acpi_unmap_sdt(mcfg);
+
 	while(true) { asm volatile("cli"); asm volatile("hlt"); }
 } 

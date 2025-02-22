@@ -126,6 +126,15 @@ int acpi_map_sdt(phys_addr_t sdt, void** mapped_sdt, size_t* page_count)
 	return SUCCESS;
 }
 
+int acpi_unmap_sdt(void* mapped_sdt)
+{
+	if(!mapped_sdt)
+		return ERR_INVALID_PARAMETER;
+
+	size_t pages = VMM_ADDRESS_SIZE_PAGES((virt_addr_t)mapped_sdt, ((acpi_sdt_header_t*)mapped_sdt)->size);
+	return vmm_unmap_pages((virt_addr_t)mapped_sdt, pages);
+}
+
 int acpi_find_table(const char* signature, void** table, size_t* page_count)
 {
 	if(!signature || ! table || ! page_count)

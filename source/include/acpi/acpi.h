@@ -33,11 +33,15 @@ int acpi_init_rsdt(multiboot_info_t* mbd);
 
 /* 
  * Maps the physical address of an SDT to a virtual address. 
+ * Note: This function returns a virtual address which directly points to the SDT. Write to this memory with caution.
  * Writes the virtual address of the SDT into <mapped_sdt>.
  * Writes the amount of allocated pages into <page_count>
  * Returns 0 on success, an error code otherwise.
  */
 int acpi_map_sdt(phys_addr_t sdt, void** mapped_sdt, size_t* page_count);
+
+/* Unmap an SDT that was mapped using acpi_map_sdt. */
+int acpi_unmap_sdt(void* mapped_sdt);
 
 /* 
  * Find an SDT table with the given sugnature.
