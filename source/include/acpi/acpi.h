@@ -20,6 +20,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>
+#include <stdlib.h>
 #include "mm/vmm/vmm.h"
 #include "multiboot.h"
 #include "acpi/tables.h"
@@ -44,7 +45,7 @@ int acpi_map_sdt(phys_addr_t sdt, void** mapped_sdt, size_t* page_count);
 int acpi_unmap_sdt(void* mapped_sdt);
 
 /* 
- * Find an SDT table with the given sugnature.
+ * Find an SDT table with the given signature.
  * Note: This function returns a virtual address which directly points to the SDT. Write to this memory with caution.
  * <signature> Must be a 4 byte ascii string.
  * Writes the virtual address of the SDT into <mapped_sdt>.
@@ -52,6 +53,15 @@ int acpi_unmap_sdt(void* mapped_sdt);
  * Returns 0 on success, an error code otherwise.
  */
 int acpi_find_table(const char* signature, void** table, size_t* page_count);
+
+/* 
+ * Find an SDT table with the given signature.
+ * Note: If no writes to the raw table are needed, use this function instead of acpi_find_table.
+ * Note: The returned table is allocated using malloc, free the memory when done.
+ * <signature> Must be a 4 byte ascii string.
+ * Returns a pointer to the table, NULL on failure.
+ */
+void* acpi_find_table_copy(const char* signature);
 
 /* 
  * Check if the table's checksum is valid. 

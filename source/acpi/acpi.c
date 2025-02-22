@@ -191,6 +191,32 @@ int acpi_find_table(const char* signature, void** table, size_t* page_count)
 	return ERR_ACPI_TABLE_NOT_FOUND;
 }
 
+void* acpi_find_table_copy(const char* signature)
+{
+	void* table;
+	size_t pages;
+	int status = acpi_find_table(signature, &table, &pages);
+	if(status != SUCCESS)
+		return NULL;
+
+	void* table_copy = malloc(((acpi_sdt_header_t*)table)->size);
+	if(!table_copy)
+	{
+		acpi_unmap_sdt(table);
+		return NULL;
+	}
+
+	memcpy(table_copy, table, ((acpi_sdt_header_t*)table)->size);
+	status = acpi_unmap_sdt(table);
+	if(status != SUCCESS)
+	{
+		free(table_copy);
+		return NULL;
+	}
+
+	return table_copy;
+}
+
 bool acpi_is_table_valid(void* table, size_t size)
 {
 	uint8_t sum = 0;
