@@ -30,6 +30,13 @@ int acpi_init(multiboot_info_t* mbd);
 int acpi_init_rsdp(multiboot_info_t* mbd);
 
 /* 
+ * Find an SDT table with the given sugnature. 
+ * <signature> Must be a 4 byte ascii string. 
+ * Returns a pointer to the found table, NULL if the table was not found or its checksum is invalid.
+ */
+void* acpi_find_table(const char* signature);
+
+/* 
  * Check if the table's checksum is valid. 
  * Performed by summing up all bytes in the table and comparing the lowest byte of the sum to 0. 
  */
