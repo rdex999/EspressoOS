@@ -18,7 +18,9 @@
 include config/build.mk
 
 QEMU:=qemu-system-x86_64
-QEMU_FLAGS:=-m 8G -vga vmware -L /usr/share/OVMF/ -pflash /usr/share/OVMF/x64/OVMF_CODE.4m.fd
+
+# -machine q35 	=> So there will be PCI express support.
+QEMU_FLAGS:=-m 8G -vga vmware -machine q35 -L /usr/share/OVMF/ -pflash /usr/share/OVMF/x64/OVMF_CODE.4m.fd
 ISO:=dist/EspressoOS.iso
 DISK_IMG:=dist/EspressoOS.img
 DISK_IMG_SIZE:=$$((1 * 1024**3))

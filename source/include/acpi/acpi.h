@@ -40,11 +40,14 @@ int acpi_init_rsdt(multiboot_info_t* mbd);
 int acpi_map_sdt(phys_addr_t sdt, void** mapped_sdt, size_t* page_count);
 
 /* 
- * Find an SDT table with the given sugnature. 
- * <signature> Must be a 4 byte ascii string. 
- * Returns a pointer to the found table, NULL if the table was not found or its checksum is invalid.
+ * Find an SDT table with the given sugnature.
+ * Note: This function returns a virtual address which directly points to the SDT. Write to this memory with caution.
+ * <signature> Must be a 4 byte ascii string.
+ * Writes the virtual address of the SDT into <mapped_sdt>.
+ * Writes the amount of allocated pages into <page_count>
+ * Returns 0 on success, an error code otherwise.
  */
-void* acpi_find_table(const char* signature);
+int acpi_find_table(const char* signature, void** table, size_t* page_count);
 
 /* 
  * Check if the table's checksum is valid. 

@@ -37,5 +37,9 @@ void kernel_main(multiboot_info_t* mbd)
 	vmm_init();
 	acpi_init(mbd);
 
+	acpi_sdt_header_t* mcfg;
+	size_t pages;
+	int status = acpi_find_table("MCFG", (void**)&mcfg, &pages);
+
 	while(true) { asm volatile("cli"); asm volatile("hlt"); }
 } 

@@ -18,6 +18,7 @@
 #include "acpi/acpi.h"
 
 static void* s_acpi_root_sdt = NULL;
+static int s_acpi_version = -1;
 
 int acpi_init(multiboot_info_t* mbd)
 {
@@ -51,7 +52,9 @@ int acpi_init_rsdt(multiboot_info_t* mbd)
 			return status;
 
 		if(memcmp(((acpi_xsdt_t*)s_acpi_root_sdt)->header.signature, ACPI_XSDT_SIGNATURE, 4) != 0)
-			return ERR_ACPI_RSDT_NOT_FOUND;
+			return ERR_ACPI_TABLE_NOT_FOUND;
+		
+		s_acpi_version = 2;
 	}
 	/* If the old_tag is not NULL and the RSDP table it points to is ACPI V1 */
 	else if(old_tag && ((acpi_rsdp_t*)old_tag->rsdp)->revision == 0)
@@ -69,7 +72,9 @@ int acpi_init_rsdt(multiboot_info_t* mbd)
 			return status;
 
 		if(memcmp(((acpi_rsdt_t*)s_acpi_root_sdt)->header.signature, ACPI_RSDT_SIGNATURE, 4) != 0)
-			return ERR_ACPI_RSDT_NOT_FOUND;
+			return ERR_ACPI_TABLE_NOT_FOUND;
+
+		s_acpi_version = 1;
 	}
 	else
 		return ERR_ACPI_RSDP_NOT_FOUND;
@@ -119,6 +124,62 @@ int acpi_map_sdt(phys_addr_t sdt, void** mapped_sdt, size_t* page_count)
 		*page_count = pages;
 
 	return SUCCESS;
+}
+
+int acpi_find_table(const char* signature, void** table, size_t* page_count)
+{
+	if(!signature || ! table || ! page_count)
+		return ERR_INVALID_PARAMETER;
+	
+	int status;
+	acpi_sdt_header_t* sdt;
+	size_t pages;
+	if(s_acpi_version == 2)
+	{
+		acpi_xsdt_t* xsdt = (acpi_xsdt_t*)s_acpi_root_sdt;
+		int length = (xsdt->header.size - sizeof(xsdt->header)) / sizeof(xsdt->sdt_pointers[0]);
+		for(int i = 0; i < length; ++i)
+		{
+			status = acpi_map_sdt(xsdt->sdt_pointers[i], (void**)&sdt, &pages);
+			if(status != SUCCESS)
+				return status;
+
+			if(memcmp(((acpi_sdt_header_t*)sdt)->signature, signature, 4) == 0 && acpi_is_table_valid(sdt, sdt->size))
+			{
+				*table = sdt;
+				*page_count = pages;
+				return SUCCESS;
+			}
+			status = vmm_unmap_pages((virt_addr_t)sdt, pages);
+			if(status != SUCCESS)
+				return status;
+		}
+	}
+	else if(s_acpi_version == 1)
+	{
+		acpi_rsdt_t* rsdt = (acpi_rsdt_t*)s_acpi_root_sdt;
+		int length = (rsdt->header.size - sizeof(rsdt->header)) / sizeof(rsdt->sdt_pointers[0]);
+		for(int i = 0; i < length; ++i)
+		{
+			status = acpi_map_sdt((phys_addr_t)rsdt->sdt_pointers[i] & 0xFFFFFFFF, (void**)&sdt, &pages);
+			if(status != SUCCESS)
+				return status;
+
+			if(memcmp(((acpi_sdt_header_t*)sdt)->signature, signature, 4) == 0 && acpi_is_table_valid(sdt, sdt->size))
+			{
+				*table = sdt;
+				*page_count = pages;
+				return SUCCESS;
+			}
+			status = vmm_unmap_pages((virt_addr_t)sdt, pages);
+			if(status != SUCCESS)
+				return status;
+		}
+	}
+	else
+		return ERR_ACPI_NOT_INITIALIZED;
+	
+	return ERR_ACPI_TABLE_NOT_FOUND;
 }
 
 bool acpi_is_table_valid(void* table, size_t size)
