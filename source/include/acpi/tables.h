@@ -66,16 +66,18 @@ typedef struct acpi_xsdt
 	uint64_t sdt_pointers[]; 				/* An array of 64bit physical addresses, each address points to some SDT. */
 } __attribute__((packed)) acpi_xsdt_t;
 
+typedef struct acpi_mcfg_config 
+{
+	uint64_t base_address;
+	uint16_t segment_group_number;
+	uint8_t start_bus_number;
+	uint8_t end_bus_number;
+	uint8_t reserved[4];
+} __attribute__((packed)) acpi_mcfg_config_t;
+
 typedef struct acpi_mcfg 
 {
 	acpi_sdt_header_t header;
 	uint8_t reserved[8];
-	struct 
-	{
-		uint64_t base_address;
-		uint16_t segment_group_number;
-		uint8_t start_bus_number;
-		uint8_t end_bus_number;
-		uint8_t reserved[4];
-	} __attribute__((packed)) configurations[];
+	acpi_mcfg_config_t configurations[];
 } __attribute__((packed)) acpi_mcfg_t;
