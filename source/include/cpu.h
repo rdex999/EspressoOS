@@ -47,3 +47,61 @@ inline void tlb_native_flush_page(void* virtual_address)
 		: "memory"
 	);
 }
+
+/* 
+ * For me forgeting everything in the future, the "N" constraint means that if the value can fit in one byte, 
+ * it will be passed as a number, otherwise it will be put into a register and passed with the register.
+ */
+inline void outl(uint16_t port, uint32_t value)
+{
+	asm volatile("outl %0, %1"
+		:
+		: "a"(value), "Nd"(port)
+	);
+}
+
+inline void outw(uint16_t port, uint16_t value)
+{
+	asm volatile("outw %0, %1"
+		:
+		: "a"(value), "Nd"(port)
+	);
+}
+
+inline void outb(uint16_t port, uint8_t value)
+{
+	asm volatile("outb %0, %1"
+		:
+		: "a"(value), "Nd"(port)
+	);
+}
+
+inline uint32_t inl(uint16_t port)
+{
+	uint32_t res;
+	asm volatile("inl %1, %0"
+		: "=a"(res)
+		: "Nd"(port)
+	);
+	return res;
+}
+
+inline uint16_t inw(uint16_t port)
+{
+	uint16_t res;
+	asm volatile("inw %1, %0"
+		: "=a"(res)
+		: "Nd"(port)
+	);
+	return res;
+}
+
+inline uint8_t inb(uint16_t port)
+{
+	uint8_t res;
+	asm volatile("inb %1, %0"
+		: "=a"(res)
+		: "Nd"(port)
+	);
+	return res;
+}

@@ -89,8 +89,8 @@ void pci_write16(uint8_t bus, uint8_t device, uint8_t func, uint8_t offset, uint
 /* Write a byte to a devices memory */
 void pci_write8(uint8_t bus, uint8_t device, uint8_t func, uint8_t offset, uint8_t value);
 
-/* Read a 4 byte value from a devices memory using access mechanism 1. (CPU IO ports)*/
+/* Read a 4 byte value from a devices memory using access mechanism 1. (CPU IO ports) Note: <offset> must be 4 byte aligned. */
 uint32_t pci_read_mechanism1(uint8_t bus, uint8_t device, uint8_t func, uint8_t offset);
 
-/* Write a 4 byte value to a devices memory using access mechanism 1. (CPU IO ports)*/
-uint32_t pci_write_mechanism1(uint8_t bus, uint8_t device, uint8_t func, uint8_t offset, uint32_t value);
+/* Write a 4 byte value to a devices memory using access mechanism 1. (CPU IO ports) Note: <offset> must be 4 byte aligned. */
+void pci_write_mechanism1(uint8_t bus, uint8_t device, uint8_t func, uint8_t offset, uint32_t value);
