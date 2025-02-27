@@ -21,6 +21,7 @@
 #include "mm/pmm/pmm.h"
 #include "mm/vmm/vmm.h"
 #include "acpi/acpi.h"
+#include "pci/pci.h"
 
 #define VIDEO ((uint32_t*)0xA0000)
 
@@ -36,9 +37,7 @@ void kernel_main(multiboot_info_t* mbd)
 	pmm_init(mmap);
 	vmm_init();
 	acpi_init(mbd);
-
-	acpi_mcfg_t* mcfg = (acpi_mcfg_t*)acpi_find_table_copy("MCFG");
-	free(mcfg);
+	pci_init();
 
 	while(true) { asm volatile("cli"); asm volatile("hlt"); }
 } 

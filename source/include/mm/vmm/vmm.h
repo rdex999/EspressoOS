@@ -49,6 +49,9 @@ typedef uint64_t virt_addr_t;
 #define VMM_ALLOC_MAP_SIZE 			(g_pmm_total_blocks / 8llu)		/* The size of the alloc bitmap buffer in bytes. */
 #define VMM_ALLOC_MAP_END			((void*)((uint64_t)VMM_ALLOC_MAP + VMM_ALLOC_MAP_SIZE))
 
+#define VMM_TEMP_MAP_PAGES			3
+#define VMM_TEMP_MAP_SIZE			(VMM_TEMP_MAP_PAGES * VMM_PAGE_SIZE)
+
 /* 
  * Page entry flags, for detailes (future me who forgets all of that) 
  * visit the AMD64 Architecture Programmer’s Manual Volume 2, page 154 (215 in PDF)
@@ -69,10 +72,10 @@ typedef uint64_t virt_addr_t;
 #define VMM_PAGE_PDE_PDPE_PAT	(1 << 12)	/* Page Attribute Table, for page directory entries and page directory pointer table entries. */
 #define VMM_PAGE_NX 			(1 << 63)	/* No Execute, for page table entries */
 
-#define VMM_VADDR_PML4E_IDX(vaddr) 			(((vaddr) >> 39) & 0x1FF)
-#define VMM_VADDR_PDPE_IDX(vaddr) 			(((vaddr) >> 30) & 0x1FF)
-#define VMM_VADDR_PDE_IDX(vaddr)				(((vaddr) >> 21) & 0x1FF)
-#define VMM_VADDR_PTE_IDX(vaddr)				(((vaddr) >> 12) & 0x1FF)
+#define VMM_VADDR_PML4E_IDX(vaddr) 			(((vaddr) >> 39) & (virt_addr_t)0x1FF)
+#define VMM_VADDR_PDPE_IDX(vaddr) 			(((vaddr) >> 30) & (virt_addr_t)0x1FF)
+#define VMM_VADDR_PDE_IDX(vaddr)			(((vaddr) >> 21) & (virt_addr_t)0x1FF)
+#define VMM_VADDR_PTE_IDX(vaddr)			(((vaddr) >> 12) & (virt_addr_t)0x1FF)
 
 #define VMM_VADDR_SET_PTE_IDX(vaddr, idx)	(((vaddr) & ~((virt_addr_t)0x1FF << 12)) | ((idx) & 1023))
 #define VMM_VADDR_SET_PDE_IDX(vaddr, idx)	(((vaddr) & ~((virt_addr_t)0x1FF << 21)) | ((idx) & 1023))
@@ -203,7 +206,7 @@ int vmm_temp_map_init(virt_addr_t temp_map_address);
 /* Temporary map a physical address, returns the virtual address that coresponds to it. */
 virt_addr_t vmm_temp_map(phys_addr_t address);
 
-/* Unmap a page that was mapped with the vmm_temp_map function. */
+/* Unmap a page that was mapped with the vmm_temp_map function. Note: This function does not free the physical memory block. */
 void vmm_temp_unmap(virt_addr_t address);
 
 /* 

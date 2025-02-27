@@ -21,6 +21,7 @@ uint64_t* g_vmm_pml4;
 bitmap g_vmm_alloc_map;
 
 static virt_addr_t s_vmm_temp_map;
+static int s_vmm_temp_map_count = 0;
 
 int vmm_init()
 {
@@ -311,17 +312,24 @@ int vmm_map_virtual_to_physical_page(virt_addr_t vaddr, phys_addr_t paddr, uint6
 		
 		pt = (uint64_t*)vmm_temp_map(pt_paddr);
 		pt_temp_map = true;
+		memset(pt, 0, VMM_PAGE_TABLE_LENGTH * sizeof(uint64_t));
 	}
 	
 	uint64_t* pte = &pt[VMM_VADDR_PTE_IDX(vaddr)];
-	*pte = VMM_CREATE_TABLE_ENTRY(flags, paddr);
+	uint64_t new_pte = VMM_CREATE_TABLE_ENTRY(flags, paddr);
+	*pte = new_pte;
 	*pde = VMM_INC_ENTRY_LU(*pde);
 	vmm_set_virtual_of(paddr, vaddr);
 
-	/* If any paging structures were created, delete the temporary mappings for their physical addresses, and create real ones. */
-	if(pt_temp_map)		{ vmm_temp_unmap((virt_addr_t)pt); 		vmm_map_physical_page(pt_paddr, VMM_PAGE_P | VMM_PAGE_RW); }
-	if(pd_temp_map)		{ vmm_temp_unmap((virt_addr_t)pd); 		vmm_map_physical_page(pd_paddr, VMM_PAGE_P | VMM_PAGE_RW); }
-	if(pdp_temp_map)	{ vmm_temp_unmap((virt_addr_t)pdp); 	vmm_map_physical_page(pdp_paddr, VMM_PAGE_P | VMM_PAGE_RW); }
+	/* 
+	 * If any paging structures were created, map their physical address and then delete the temporary mappings 
+	 * that were created. 
+	 * Delete the temporary mapping after mapping the phyisical address so that the recursive calls to this function 
+	 * can access the paging structures (and vmm_get_sub_table will return the correct pointer).
+	 */
+	if(pt_temp_map)		{ vmm_map_physical_page(pt_paddr, VMM_PAGE_P | VMM_PAGE_RW); vmm_temp_unmap((virt_addr_t)pt); }
+	if(pd_temp_map)		{ vmm_map_physical_page(pd_paddr, VMM_PAGE_P | VMM_PAGE_RW); vmm_temp_unmap((virt_addr_t)pd); }
+	if(pdp_temp_map)	{ vmm_map_physical_page(pdp_paddr, VMM_PAGE_P | VMM_PAGE_RW); vmm_temp_unmap((virt_addr_t)pdp); }
 	
 	return SUCCESS;
 }
@@ -350,7 +358,7 @@ int vmm_temp_map_init(virt_addr_t temp_map_address)
 	 * Here we can use the physical address as the virtual address, as it is promissed to be identity mapped by vmm_init_first_tables().
 	 */
 
-	for(virt_addr_t vaddr = temp_map_address; vaddr < temp_map_address + VMM_PAGE_SIZE*3; vaddr += VMM_PAGE_SIZE)
+	for(virt_addr_t vaddr = temp_map_address; vaddr < temp_map_address + VMM_TEMP_MAP_SIZE; vaddr += VMM_PAGE_SIZE)
 	{
 		uint64_t* pml4e = vmm_get_pml4e(vaddr);
 		uint64_t* pdp;
@@ -394,15 +402,19 @@ int vmm_temp_map_init(virt_addr_t temp_map_address)
 	
 		*pde = VMM_INC_ENTRY_LU(*pde);
 	}
-	vmm_mark_alloc_virtual_pages(temp_map_address, 3);
+	vmm_mark_alloc_virtual_pages(temp_map_address, VMM_TEMP_MAP_PAGES);
 	s_vmm_temp_map = temp_map_address;
 	return SUCCESS;
 }
 
 virt_addr_t vmm_temp_map(phys_addr_t address)
 {
+	if(s_vmm_temp_map_count >= VMM_TEMP_MAP_PAGES)
+		return (virt_addr_t)-1;
+
 	virt_addr_t vaddr = s_vmm_temp_map;
 	s_vmm_temp_map += VMM_PAGE_SIZE;
+	++s_vmm_temp_map_count;
 
 	uint64_t pte = VMM_CREATE_TABLE_ENTRY(VMM_PAGE_P | VMM_PAGE_RW, address);
 	vmm_set_pte(vaddr, pte);
@@ -411,8 +423,17 @@ virt_addr_t vmm_temp_map(phys_addr_t address)
 
 void vmm_temp_unmap(virt_addr_t address)
 {
+	if(s_vmm_temp_map_count <= 0)
+		return;
+
+	uint64_t* pte = vmm_get_pte(address);
+	if(pte == NULL)
+		return;
+
 	s_vmm_temp_map -= VMM_PAGE_SIZE;
-	vmm_set_pte(address, (uint64_t)0);
+	--s_vmm_temp_map_count;
+	*pte = (uint64_t)0;
+	tlb_native_flush_page((void*)address);
 }
 
 bool vmm_is_valid_entry(uint64_t entry)

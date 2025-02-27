@@ -22,6 +22,7 @@
 #define ACPI_RSDP_SIGNATURE "RSD PTR "
 #define ACPI_RSDT_SIGNATURE "RSDT"
 #define ACPI_XSDT_SIGNATURE "XSDT"
+#define ACPI_MCFG_SIGNATURE "MCFG"
 
 typedef struct acpi_rsdp 
 {
