@@ -79,8 +79,8 @@ uint16_t pci_read16(uint8_t bus, uint8_t device, uint8_t function, uint16_t offs
 		if(offset % 4 <= 2)
 			return pci_read_mechanism1(bus, device, function, offset) >> ((offset % 4) * 8);
 
-		uint16_t low = pci_read_mechanism1(bus, device, function, ALIGN_DOWN(offset, 4)) >> ((offset % 4) * 8);
-		uint16_t high = pci_read_mechanism1(bus, device, function, ALIGN_UP(offset, 4)) << ((4 - offset % 4) * 8);
+		uint16_t low = pci_read_mechanism1(bus, device, function, ALIGN_DOWN(offset, 4)) >> (3*8);
+		uint16_t high = pci_read_mechanism1(bus, device, function, ALIGN_UP(offset, 4)) << 8;
 		return low | high;
 	}
 	
@@ -121,6 +121,34 @@ void pci_write32(uint8_t bus, uint8_t device, uint8_t function, uint16_t offset,
 			uint32_t high_mask = 0xFFFFFFFF >> ((4 - offset % 4) * 8);
 			uint32_t high_old = pci_read_mechanism1(bus, device, function, ALIGN_UP(offset, 4));
 			uint32_t high_new = (high_old & ~high_mask) | (value >> ((4 - offset % 4) * 8));
+			pci_write_mechanism1(bus, device, function, ALIGN_UP(offset, 4), high_new);
+		}
+	}
+}
+
+void pci_write16(uint8_t bus, uint8_t device, uint8_t function, uint16_t offset, uint16_t value)
+{
+	if(s_pci_access_mechanism == PCI_ACCESS_MMCONFIG)
+	{
+		*(uint32_t*)(s_pci_mmconfig + PCI_MMCONFIG_ADDRESS_OFFSET(bus, device, function, offset)) = value;
+	}
+	else if(s_pci_access_mechanism == PCI_ACCESS_MECHANISM1)
+	{
+		if(offset % 4 <= 2)
+		{
+			uint32_t mask = 0xFFFF << ((offset % 4) * 8);
+			uint32_t old = pci_read_mechanism1(bus, device, function, offset);
+			uint32_t new_value = (old & ~mask) | ((uint32_t)value << ((offset % 4) * 8));
+			pci_write_mechanism1(bus, device, function, offset, new_value);
+		}
+		else
+		{
+			uint32_t low_old = pci_read_mechanism1(bus, device, function, ALIGN_DOWN(offset, 4));
+			uint32_t low_new = (low_old & 0x00FFFFFF) | ((uint32_t)value << (3*8));
+			pci_write_mechanism1(bus, device, function, ALIGN_DOWN(offset, 4), low_new);
+
+			uint32_t high_old = pci_read_mechanism1(bus, device, function, ALIGN_UP(offset, 4));
+			uint32_t high_new = (high_old & 0xFFFFFF00) | ((uint32_t)value >> 8);
 			pci_write_mechanism1(bus, device, function, ALIGN_UP(offset, 4), high_new);
 		}
 	}
