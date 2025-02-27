@@ -58,8 +58,25 @@ uint32_t pci_read32(uint8_t bus, uint8_t device, uint8_t function, uint8_t offse
 		if(IS_ALIGNED(offset, 4))
 			return pci_read_mechanism1(bus, device, function, offset);
 
-		uint32_t low = pci_read_mechanism1(bus, device, function, ALIGN_DOWN(offset, 4)) >> ((offset & 0x3) * 8);
-		uint32_t high = pci_read_mechanism1(bus, device, function, ALIGN_UP(offset, 4)) << ((4 - (offset & 0x3)) * 8);
+		uint32_t low = pci_read_mechanism1(bus, device, function, ALIGN_DOWN(offset, 4)) >> ((offset % 4) * 8);
+		uint32_t high = pci_read_mechanism1(bus, device, function, ALIGN_UP(offset, 4)) << ((4 - (offset % 4)) * 8);
+		return low | high;
+	}
+	
+	return -1;
+}
+
+uint16_t pci_read16(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset)
+{
+	if(s_pci_access_mechanism == PCI_ACCESS_MMCONFIG)
+		return *(uint16_t*)(s_pci_mmconfig + PCI_MMCONFIG_ADDRESS_OFFSET(bus, device, function, offset));
+	else if(s_pci_access_mechanism == PCI_ACCESS_MECHANISM1)
+	{
+		if(offset % 4 <= 2)
+			return pci_read_mechanism1(bus, device, function, offset) >> ((offset % 4) * 8);
+
+		uint16_t low = pci_read_mechanism1(bus, device, function, ALIGN_DOWN(offset, 4)) >> ((offset % 4) * 8);
+		uint16_t high = pci_read_mechanism1(bus, device, function, ALIGN_UP(offset, 4)) << ((4 - (offset % 4)) * 8);
 		return low | high;
 	}
 	

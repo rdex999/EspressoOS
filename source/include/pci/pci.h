@@ -43,6 +43,21 @@ typedef enum pci_access_mechanism
 	PCI_ACCESS_MMCONFIG,
 } pci_access_mechanism_t;
 
+typedef struct pci_config_device
+{
+	uint32_t base_address[6];
+	uint32_t cardbus_cis_pointer;
+	uint16_t subsystem_vendor_id;
+	uint16_t subsystem_id;
+	uint32_t expansion_rom_base_address;
+	uint8_t capabilities_pointer;
+	uint8_t reserved[7];
+	uint8_t interrupt_line;
+	uint8_t interrupt_pin;
+	uint8_t min_grant;
+	uint8_t max_latency;
+} __attribute__((packed)) pci_config_device_t;
+
 typedef struct pci_config 
 {
 	uint16_t vendor_id;
@@ -57,23 +72,14 @@ typedef struct pci_config
 	uint8_t latency_timer;
 	uint8_t header_type;
 	uint8_t bist;
-} __attribute__((packed)) pci_config_t;
 
-typedef struct pci_config_device
-{
-	pci_config_t config;
-	uint32_t base_address[6];
-	uint32_t cardbus_cis_pointer;
-	uint16_t subsystem_vendor_id;
-	uint16_t subsystem_id;
-	uint32_t expansion_rom_base_address;
-	uint8_t capabilities_pointer;
-	uint8_t reserved[7];
-	uint8_t interrupt_line;
-	uint8_t interrupt_pin;
-	uint8_t min_grant;
-	uint8_t max_latency;
-} __attribute__((packed)) pci_config_device_t;
+	union
+	{
+		pci_config_device_t device;
+		/* Setup bridges and stuff here later */	
+	};
+	
+} __attribute__((packed)) pci_config_t;
 
 /* Initialize PCI, detect available access mechanisms. Returns 0 on success, an error code otherwise. */
 int pci_init();
@@ -82,10 +88,10 @@ int pci_init();
 uint32_t pci_read32(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset);
 
 /* Read a 2 byte value from a devices memory */
-uint32_t pci_read16(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset);
+uint16_t pci_read16(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset);
 
 /* Read a byte from a devices memory */
-uint32_t pci_read8(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset);
+uint8_t pci_read8(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset);
 
 /* Write a 4 byte value to a devices memory */
 void pci_write32(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset, uint32_t value);
