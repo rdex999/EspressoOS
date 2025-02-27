@@ -24,6 +24,7 @@
 #include "mm/pmm/pmm.h"
 #include "mm/vmm/vmm.h"
 #include "acpi/acpi.h"
+#include "cpu.h"
 
 #define PCI_DEVICES_PER_BUS 		32
 #define PCI_FUNCTIONS_PER_DEVICE 	8

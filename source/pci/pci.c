@@ -48,3 +48,17 @@ int pci_init()
 
 	return SUCCESS;
 }
+
+uint32_t pci_read_mechanism1(uint8_t bus, uint8_t device, uint8_t func, uint8_t offset)
+{
+	uint32_t address = (bus << 16) | (device << 11) | (func << 8) | (offset & 0xFC) | (1 << 31);
+	outl(PCI_CONFIG__PORT, address);
+	return inl(PCI_DATA_PORT);
+}
+
+void pci_write_mechanism1(uint8_t bus, uint8_t device, uint8_t func, uint8_t offset, uint32_t value)
+{
+	uint32_t address = (bus << 16) | (device << 11) | (func << 8) | (offset & 0xFC) | (1 << 31);
+	outl(PCI_CONFIG__PORT, address);
+	outl(PCI_DATA_PORT, value);
+}
