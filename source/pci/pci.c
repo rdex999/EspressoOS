@@ -18,7 +18,7 @@
 #include "pci/pci.h"
 
 static pci_access_mechanism_t s_pci_access_mechanism = (pci_access_mechanism_t)-1;
-static pci_config_t* s_pci_mmconfig = NULL;
+static uint8_t* s_pci_mmconfig = NULL;
 
 int pci_init()
 {
@@ -34,13 +34,13 @@ int pci_init()
 
 		free(mcfg);
 	
-		s_pci_mmconfig = (pci_config_t*)vmm_map_physical_pages(
+		s_pci_mmconfig = (uint8_t*)vmm_map_physical_pages(
 			base_address, 
 			VMM_PAGE_P | VMM_PAGE_RW,
 			mmconfig_size / VMM_PAGE_SIZE
 		);
 	
-		if(s_pci_mmconfig == (pci_config_t*)-1)
+		if(s_pci_mmconfig == (uint8_t*)-1)
 			return ERR_OUT_OF_MEMORY;
 	}
 	else
@@ -49,16 +49,33 @@ int pci_init()
 	return SUCCESS;
 }
 
-uint32_t pci_read_mechanism1(uint8_t bus, uint8_t device, uint8_t func, uint8_t offset)
+uint32_t pci_read32(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset)
 {
-	uint32_t address = (bus << 16) | (device << 11) | (func << 8) | (offset & 0xFC) | (1 << 31);
+	if(s_pci_access_mechanism == PCI_ACCESS_MMCONFIG)
+		return *(uint32_t*)(s_pci_mmconfig + PCI_MMCONFIG_ADDRESS_OFFSET(bus, device, function, offset));
+	else if(s_pci_access_mechanism == PCI_ACCESS_MECHANISM1)
+	{
+		if(IS_ALIGNED(offset, 4))
+			return pci_read_mechanism1(bus, device, function, offset);
+
+		uint32_t low = pci_read_mechanism1(bus, device, function, ALIGN_DOWN(offset, 4)) >> ((offset & 0x3) * 8);
+		uint32_t high = pci_read_mechanism1(bus, device, function, ALIGN_UP(offset, 4)) << ((4 - (offset & 0x3)) * 8);
+		return low | high;
+	}
+	
+	return -1;
+}
+
+uint32_t pci_read_mechanism1(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset)
+{
+	uint32_t address = PCI_MECHANISM1_ADDRESS(bus, device, function, offset);
 	outl(PCI_CONFIG__PORT, address);
 	return inl(PCI_DATA_PORT);
 }
 
-void pci_write_mechanism1(uint8_t bus, uint8_t device, uint8_t func, uint8_t offset, uint32_t value)
+void pci_write_mechanism1(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset, uint32_t value)
 {
-	uint32_t address = (bus << 16) | (device << 11) | (func << 8) | (offset & 0xFC) | (1 << 31);
+	uint32_t address = PCI_MECHANISM1_ADDRESS(bus, device, function, offset);
 	outl(PCI_CONFIG__PORT, address);
 	outl(PCI_DATA_PORT, value);
 }

@@ -31,6 +31,12 @@
 #define PCI_CONFIG__PORT 			0xCF8
 #define PCI_DATA_PORT 				0xCFC
 
+#define PCI_MMCONFIG_ADDRESS_OFFSET(bus, device, function, offset) \
+	((((uint64_t)(bus) << 20) | ((uint64_t)(device) << 15) | ((uint64_t)(function) << 12)) + (uint64_t)(offset))
+
+#define PCI_MECHANISM1_ADDRESS(bus, device, function, offset) \
+	(((uint32_t)(bus) << 16) | ((uint32_t)(device) << 11) | ((uint32_t)(function) << 8) | ((uint32_t)(offset) & 0xFC) | (1 << 31))
+
 typedef enum pci_access_mechanism
 {
 	PCI_ACCESS_MECHANISM1,
@@ -73,25 +79,25 @@ typedef struct pci_config_device
 int pci_init();
 
 /* Read a 4 byte value from a devices memory */
-uint32_t pci_read32(uint8_t bus, uint8_t device, uint8_t func, uint8_t offset);
+uint32_t pci_read32(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset);
 
 /* Read a 2 byte value from a devices memory */
-uint32_t pci_read16(uint8_t bus, uint8_t device, uint8_t func, uint8_t offset);
+uint32_t pci_read16(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset);
 
 /* Read a byte from a devices memory */
-uint32_t pci_read8(uint8_t bus, uint8_t device, uint8_t func, uint8_t offset);
+uint32_t pci_read8(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset);
 
 /* Write a 4 byte value to a devices memory */
-void pci_write32(uint8_t bus, uint8_t device, uint8_t func, uint8_t offset, uint32_t value);
+void pci_write32(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset, uint32_t value);
 
 /* Write a 2 byte value to a devices memory */
-void pci_write16(uint8_t bus, uint8_t device, uint8_t func, uint8_t offset, uint16_t value);
+void pci_write16(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset, uint16_t value);
 
 /* Write a byte to a devices memory */
-void pci_write8(uint8_t bus, uint8_t device, uint8_t func, uint8_t offset, uint8_t value);
+void pci_write8(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset, uint8_t value);
 
 /* Read a 4 byte value from a devices memory using access mechanism 1. (CPU IO ports) Note: <offset> must be 4 byte aligned. */
-uint32_t pci_read_mechanism1(uint8_t bus, uint8_t device, uint8_t func, uint8_t offset);
+uint32_t pci_read_mechanism1(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset);
 
 /* Write a 4 byte value to a devices memory using access mechanism 1. (CPU IO ports) Note: <offset> must be 4 byte aligned. */
-void pci_write_mechanism1(uint8_t bus, uint8_t device, uint8_t func, uint8_t offset, uint32_t value);
+void pci_write_mechanism1(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset, uint32_t value);
