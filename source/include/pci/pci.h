@@ -28,7 +28,7 @@
 
 #define PCI_DEVICES_PER_BUS 		32
 #define PCI_FUNCTIONS_PER_DEVICE 	8
-#define PCI_CONFIG__PORT 			0xCF8
+#define PCI_CONFIG_PORT 			0xCF8
 #define PCI_DATA_PORT 				0xCFC
 
 #define PCI_MMCONFIG_ADDRESS_OFFSET(bus, device, function, offset) \
@@ -85,22 +85,22 @@ typedef struct pci_config
 int pci_init();
 
 /* Read a 4 byte value from a devices memory */
-uint32_t pci_read32(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset);
+uint32_t pci_read32(uint8_t bus, uint8_t device, uint8_t function, uint16_t offset);
 
 /* Read a 2 byte value from a devices memory */
-uint16_t pci_read16(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset);
+uint16_t pci_read16(uint8_t bus, uint8_t device, uint8_t function, uint16_t offset);
 
 /* Read a byte from a devices memory */
-uint8_t pci_read8(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset);
+uint8_t pci_read8(uint8_t bus, uint8_t device, uint8_t function, uint16_t offset);
 
 /* Write a 4 byte value to a devices memory */
-void pci_write32(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset, uint32_t value);
+void pci_write32(uint8_t bus, uint8_t device, uint8_t function, uint16_t offset, uint32_t value);
 
 /* Write a 2 byte value to a devices memory */
-void pci_write16(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset, uint16_t value);
+void pci_write16(uint8_t bus, uint8_t device, uint8_t function, uint16_t offset, uint16_t value);
 
 /* Write a byte to a devices memory */
-void pci_write8(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset, uint8_t value);
+void pci_write8(uint8_t bus, uint8_t device, uint8_t function, uint16_t offset, uint8_t value);
 
 /* Read a 4 byte value from a devices memory using access mechanism 1. (CPU IO ports) Note: <offset> must be 4 byte aligned. */
 uint32_t pci_read_mechanism1(uint8_t bus, uint8_t device, uint8_t function, uint8_t offset);
