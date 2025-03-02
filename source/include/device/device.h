@@ -49,7 +49,7 @@ public:
 	 * Initialize the device and discover all its children (If any). 
 	 * This function should be called after adding the device to the device tree.
 	 */
-	virtual void init();
+	inline virtual void init() { discover_children(); };
 
 	/* 
 	 * Check if this device matches <dev>, if not check this for all children. (recursive). 

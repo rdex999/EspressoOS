@@ -19,6 +19,25 @@
 
 // device_computer g_device_root;
 
+device::~device()
+{
+	device* dev = m_children;
+	while (dev)
+	{
+		device* next = dev->m_next;
+		
+		dev->destroy();
+		dev->~device();
+		
+		dev = next;
+	}
+
+	if(m_parent)
+		m_parent->remove_child(this);
+
+	free(this);
+}
+
 void device::add_child(device* dev)
 {
 	if(!dev)
