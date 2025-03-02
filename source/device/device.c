@@ -38,6 +38,26 @@ device::~device()
 	free(this);
 }
 
+device* device::find(const device* dev) const
+{
+	if(!dev)
+		return NULL;
+
+	if(is_device(dev))
+		return (device*)this;
+	
+	device* child = m_children;
+	while (child)
+	{
+		if(device* found = child->find(dev))
+			return found;
+
+		child = child->m_next;
+	}
+
+	return NULL;
+}
+
 void device::add_child(device* dev)
 {
 	if(!dev)
