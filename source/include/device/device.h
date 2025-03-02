@@ -19,6 +19,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <stdlib.h>
 
 /* Used for down-casting only. */
 typedef enum device_type
@@ -35,8 +36,14 @@ public:
 	inline device(device_type_t type) 
 		: m_type(type) {}
 
-	/* Destroy all child devices of this device, and this device. */
+	/* 
+	 * Destroy all child devices of this device, and this device. Removes this device from the device tree.
+	 * To remove a device from the device tree, first call destroy() and then call ~device().
+	 */
 	~device();
+
+	/* Free used resources, basicaly uninitialize this device. */
+	virtual void destroy() = 0;
 
 	/* 
 	 * Initialize the device and discover all its children (If any). 
@@ -51,11 +58,11 @@ public:
 	device* find(const device* dev) const;
 
 protected:
-	/* Free used resources, basicaly uninitialize this device. */
-	virtual void destroy() = 0;
-	
 	/* Add a child to the child devices linked list. (Appends to the beginning of the list)*/
 	void add_child(device* dev);
+
+	/* Remove a child from the child devices linked list. */
+	void remove_child(device* dev);
 
 	/* 
 	 * Check if this device is the same as <dev>, from the most general identifiers to the most specific.
@@ -79,8 +86,6 @@ class device_computer : public device
 {
 public:
 	device_computer() : device(DEVICE_TYPE_COMPUTER) {};
-	void init() override {};
-	void discover_children() override {};
 };
 
 // extern device_computer g_device_root;

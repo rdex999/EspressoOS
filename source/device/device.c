@@ -18,3 +18,11 @@
 #include "device/device.h"
 
 // device_computer g_device_root;
+
+void device::add_child(device* dev)
+{
+	dev->m_next = m_children;
+	m_children->m_prev = dev;
+	m_children = dev;
+	dev->m_parent = this;
+}
