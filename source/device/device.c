@@ -21,8 +21,30 @@
 
 void device::add_child(device* dev)
 {
+	if(!dev)
+		return;
+
 	dev->m_next = m_children;
 	m_children->m_prev = dev;
 	m_children = dev;
 	dev->m_parent = this;
+}
+
+void device::remove_child(device* dev)
+{
+	if(!dev)
+		return;
+
+	if (dev->m_prev)
+		dev->m_prev->m_next = dev->m_next;
+
+	if (dev->m_next)
+		dev->m_next->m_prev = dev->m_prev;
+
+	if (m_children == dev)
+		m_children = dev->m_next;
+
+	dev->m_parent = NULL;
+	dev->m_prev = NULL;
+	dev->m_next = NULL;
 }
