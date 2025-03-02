@@ -16,3 +16,5 @@
  */
 
 #include "device/device.h"
+
+// device_computer g_device_root;
