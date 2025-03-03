@@ -33,7 +33,6 @@ public:
 protected:
 	virtual bool is_device(const device* dev) const override;
 
-private:
 	const uint8_t m_bus;
 	const uint8_t m_device;
 	const uint8_t m_function;
@@ -54,5 +53,5 @@ public:
 	void uninitialize() override {};
 
 protected:
-	void discover_children() override;
+	void discover_children() override {};
 };

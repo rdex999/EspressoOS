@@ -66,3 +66,16 @@ bool device_pci::is_device(const device* dev) const
 	/* User made a specific search on all identifiers. */
 	return pci_device->m_device_id == m_device_id;
 }
+
+void device_pci_bridge::initialize()
+{
+	device_pci::initialize();
+
+	/* For some reason, we need (should) to read the bus numbers and write them back. */
+	uint8_t secondary_bus = pci_read8(m_bus, m_device, m_function, offsetof(pci_config_bridge_t, secondary_bus));
+	uint8_t subordinate_bus = pci_read8(m_bus, m_device, m_function, offsetof(pci_config_bridge_t, subordinate_bus));
+
+	pci_write8(m_bus, m_device, m_function, offsetof(pci_config_bridge_t, primary_bus), m_bus);
+	pci_write8(m_bus, m_device, m_function, offsetof(pci_config_bridge_t, secondary_bus), secondary_bus);
+	pci_write8(m_bus, m_device, m_function, offsetof(pci_config_bridge_t, subordinate_bus), subordinate_bus);
+}
