@@ -22,6 +22,7 @@ static uint8_t* s_pci_mmconfig = NULL;
 
 int pci_init()
 {
+	uint8_t start_bus = 0;
 	acpi_mcfg_t* mcfg = (acpi_mcfg_t*)acpi_find_table_copy(ACPI_MCFG_SIGNATURE);
 	if(mcfg)
 	{
@@ -31,7 +32,7 @@ int pci_init()
 		phys_addr_t base_address = mcfg_config->base_address;
 		int buses = (int)(mcfg_config->end_bus_number - mcfg_config->start_bus_number + 1);
 		size_t mmconfig_size = (size_t)buses * PCI_DEVICES_PER_BUS * PCI_FUNCTIONS_PER_DEVICE * 4096;
-
+		start_bus = mcfg_config->start_bus_number;
 		free(mcfg);
 	
 		s_pci_mmconfig = (uint8_t*)vmm_map_physical_pages(
@@ -46,6 +47,12 @@ int pci_init()
 	else
 		s_pci_access_mechanism = PCI_ACCESS_MECHANISM1;
 
+	return pci_discover_devices(start_bus);
+}
+
+int pci_discover_devices(uint8_t start_bus)
+{
+	/* TODO: */
 	return SUCCESS;
 }
 

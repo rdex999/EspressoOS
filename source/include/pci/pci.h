@@ -25,6 +25,7 @@
 #include "mm/vmm/vmm.h"
 #include "acpi/acpi.h"
 #include "cpu.h"
+#include "pci/device.h"
 
 #define PCI_DEVICES_PER_BUS 		32
 #define PCI_FUNCTIONS_PER_DEVICE 	8
@@ -83,6 +84,9 @@ typedef struct pci_config
 
 /* Initialize PCI, detect available access mechanisms. Returns 0 on success, an error code otherwise. */
 int pci_init();
+
+/* Discover all PCI devices in the system, initialize them if possible, and add to the device tree. */
+int pci_discover_devices(uint8_t start_bus);
 
 /* Read a 4 byte value from a devices memory */
 uint32_t pci_read32(uint8_t bus, uint8_t device, uint8_t function, uint16_t offset);

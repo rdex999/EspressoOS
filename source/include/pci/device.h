@@ -25,15 +25,13 @@
 class device_pci : public device
 {
 public:
-	device_pci(uint8_t bus, uint8_t device, uint8_t function)
-		: ::device(DEVICE_TYPE_PCI), m_bus(bus), m_device(device), m_function(function) {}
+	device_pci(device_type_t type, uint8_t bus, uint8_t device, uint8_t function)
+		: ::device(type | DEVICE_TYPE_PCI), m_bus(bus), m_device(device), m_function(function) {}
 
 	virtual void initialize() override;
 
-	virtual bool is_device(const device* dev) const override;
 protected:
-	virtual void uninitialize() override {}
-	virtual void discover_children() override {}
+	virtual bool is_device(const device* dev) const override;
 
 private:
 	const uint8_t m_bus;
@@ -44,4 +42,17 @@ private:
 	uint16_t m_device_id;
 	uint8_t m_class_code;
 	uint8_t m_subclass;
+};
+
+class device_pci_bridge : public device_pci
+{
+public:
+	device_pci_bridge(uint8_t bus, uint8_t device, uint8_t function)
+		: device_pci(DEVICE_TYPE_PCI_BRIDGE, bus, device, function) {}
+
+	void initialize() override;
+	void uninitialize() override {};
+
+protected:
+	void discover_children() override;
 };

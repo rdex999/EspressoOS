@@ -22,12 +22,11 @@
 #include <stdlib.h>
 
 /* Used for down-casting only. */
-typedef enum device_type
-{
-	DEVICE_TYPE_NONE 		= 0,
-	DEVICE_TYPE_COMPUTER	= 1 << 0,
-	DEVICE_TYPE_PCI			= 1 << 1,
-} device_type_t;
+typedef uint64_t device_type_t;
+#define DEVICE_TYPE_NONE 			((device_type_t)0),
+#define DEVICE_TYPE_COMPUTER		((device_type_t)1 << 0)
+#define DEVICE_TYPE_PCI				((device_type_t)1 << 1)
+#define DEVICE_TYPE_PCI_BRIDGE		(((device_type_t)1 << 2) | DEVICE_TYPE_PCI)
 
 class device
 {
