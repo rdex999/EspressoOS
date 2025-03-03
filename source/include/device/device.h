@@ -36,20 +36,25 @@ public:
 	inline device(device_type_t type) 
 		: m_type(type) {}
 
-	/* 
-	 * Destroy all child devices of this device, and this device. Removes this device from the device tree.
-	 * To remove a device from the device tree, first call destroy() and then call ~device().
+	/*
+	 * This function acts as the destructor of the device.
+	 * Destroys all child devices of this device, Removes this device from the device tree.
+	 * Uses device::uninitialize(), and free's this device (free(this))
+	 * Note: After calling this function, do not use this object anymore.
 	 */
-	~device();
+	void destroy();
 
-	/* Free used resources, basicaly uninitialize this device. */
-	virtual void destroy() = 0;
+	/* 
+	 * Uninitializes the device, free's used resources. 
+	 * This function does not remove its children nor does it removes this device from the device tree. 
+	 */
+	virtual void uninitialize() = 0;
 
 	/* 
 	 * Initialize the device and discover all its children (If any). 
 	 * This function should be called after adding the device to the device tree.
 	 */
-	inline virtual void init() { discover_children(); };
+	inline virtual void initialize() { discover_children(); };
 
 	/* 
 	 * Check if this device matches <dev>, if not check this for all children. (recursive). 

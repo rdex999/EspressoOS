@@ -19,7 +19,7 @@
 
 // device_computer g_device_root;
 
-device::~device()
+void device::destroy()
 {
 	device* dev = m_children;
 	while (dev)
@@ -27,7 +27,6 @@ device::~device()
 		device* next = dev->m_next;
 		
 		dev->destroy();
-		dev->~device();
 		
 		dev = next;
 	}
@@ -35,6 +34,7 @@ device::~device()
 	if(m_parent)
 		m_parent->remove_child(this);
 
+	uninitialize();
 	free(this);
 }
 
