@@ -30,8 +30,10 @@ public:
 
 	virtual void initialize() override;
 
-protected:
 	virtual bool is_device(const device* dev) const override;
+protected:
+	virtual void uninitialize() override {}
+	virtual void discover_children() override {}
 
 private:
 	const uint8_t m_bus;

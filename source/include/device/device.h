@@ -24,9 +24,9 @@
 /* Used for down-casting only. */
 typedef enum device_type
 {
-	DEVICE_TYPE_NONE,
-	DEVICE_TYPE_COMPUTER,
-	DEVICE_TYPE_PCI,
+	DEVICE_TYPE_NONE 		= 0,
+	DEVICE_TYPE_COMPUTER	= 1 << 0,
+	DEVICE_TYPE_PCI			= 1 << 1,
 } device_type_t;
 
 class device
@@ -62,6 +62,8 @@ public:
 	 */
 	device* find(const device* dev) const;
 
+	const device_type_t m_type;
+
 protected:
 	/* Add a child to the child devices linked list. (Appends to the beginning of the list)*/
 	void add_child(device* dev);
@@ -77,8 +79,6 @@ protected:
 	
 	/* Discover all children of this device. */
 	virtual void discover_children() = 0;
-	
-	const device_type_t m_type;
 
 	device* m_parent;
 	device* m_children;
