@@ -17,7 +17,7 @@
 
 #include "device/device.h"
 
-// device_computer g_device_root;
+device_computer g_device_root;
 
 void device::destroy()
 {

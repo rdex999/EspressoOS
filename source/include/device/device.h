@@ -91,6 +91,22 @@ class device_computer : public device
 {
 public:
 	device_computer() : device(DEVICE_TYPE_COMPUTER) {};
+
+	void initialize() 	override {};
+	void uninitialize() override {};
+
+	/* 
+	 * Made these public so that devices can be added to the root by themselves.
+	 * In this class devices are not discovered using discover_children(), the root devices add themselves to the tree.
+	 * For example, a PCI device would add itself to the children of the root device.
+	 * This is done so devices can add themselves whenever their ready, and not only when the root device is initialized.
+	 */
+	inline void add_child(device* dev) 		{ device::add_child(dev); }
+	inline void remove_child(device* dev) 	{ device::remove_child(dev); }
+
+protected:
+	bool is_device(const device*) const override { return false; };
+	void discover_children() override {};
 };
 
-// extern device_computer g_device_root;
+extern device_computer g_device_root;
