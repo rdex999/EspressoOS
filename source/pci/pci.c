@@ -56,6 +56,17 @@ int pci_discover_devices(uint8_t /* start_bus */)
 	return SUCCESS;
 }
 
+device_pci* pci_create_device(uint8_t bus, uint8_t device, uint8_t function)
+{
+	uint8_t type = pci_read8(bus, device, function, offsetof(pci_config_t, header_type)) & 0x7F;
+	
+	if(type == 1)
+		return new device_pci_bridge(bus, device, function);
+	
+	/* TODO: Handle regular devices */
+	return NULL; 
+}
+
 uint32_t pci_read32(uint8_t bus, uint8_t device, uint8_t function, uint16_t offset)
 {
 	if(s_pci_access_mechanism == PCI_ACCESS_MMCONFIG)

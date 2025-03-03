@@ -114,6 +114,13 @@ int pci_init();
 /* Discover all PCI devices in the system, initialize them if possible, and add to the device tree. */
 int pci_discover_devices(uint8_t start_bus);
 
+/* 
+ * Returns a device object describing the connected device at the given location (bus, device, function).
+ * Returns NULL if no device is found at the given location.
+ * Note: This function does not initialize the device nor does it add it to the device tree.
+ */
+device_pci* pci_create_device(uint8_t bus, uint8_t device, uint8_t function);
+
 /* Read a 4 byte value from a devices memory */
 uint32_t pci_read32(uint8_t bus, uint8_t device, uint8_t function, uint16_t offset);
 
