@@ -19,7 +19,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include <new>
+#include <stdlib.h>
 #include <string.h>
 #include "multiboot.h"
 #include "common.h"

@@ -50,7 +50,7 @@ int pci_init()
 	return pci_discover_devices(start_bus);
 }
 
-int pci_discover_devices(uint8_t start_bus)
+int pci_discover_devices(uint8_t /* start_bus */)
 {
 	/* TODO: */
 	return SUCCESS;

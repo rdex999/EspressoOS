@@ -53,5 +53,5 @@ public:
 	void uninitialize() override {};
 
 protected:
-	void discover_children() override {};
+	void discover_children() override;
 };

@@ -22,3 +22,22 @@
 
 void* malloc(size_t size);
 void free(void* ptr);
+
+/* Basically just malloc, use these keywords when creating/deleting objects. */
+inline void* operator new (size_t size) 			{ return malloc(size); }
+inline void* operator new[] (size_t size) 			{ return malloc(size); }
+
+inline void operator delete (void* ptr) 			{ free(ptr); }
+inline void operator delete[] (void* ptr) 			{ free(ptr); }
+
+/* Placement new operators */
+inline void* operator new (size_t, void* ptr)   	{ return ptr; }
+inline void* operator new[] (size_t, void* ptr) 	{ return ptr; }
+
+/* Placement delete operators */
+inline void  operator delete (void*, void*) 		{ }
+inline void  operator delete[] (void*, void*) 		{ }
+
+/* Sized delete operators */
+inline void operator delete (void* ptr, size_t) 	{ free(ptr); }
+inline void operator delete[] (void* ptr, size_t)	{ free(ptr); }

@@ -69,13 +69,24 @@ bool device_pci::is_device(const device* dev) const
 
 void device_pci_bridge::initialize()
 {
+	static int next_free_bus = 1;
+
 	device_pci::initialize();
 
-	/* For some reason, we need (should) to read the bus numbers and write them back. */
-	uint8_t secondary_bus = pci_read8(m_bus, m_device, m_function, offsetof(pci_config_bridge_t, secondary_bus));
-	uint8_t subordinate_bus = pci_read8(m_bus, m_device, m_function, offsetof(pci_config_bridge_t, subordinate_bus));
+	uint8_t secondary_bus = next_free_bus++;
+	uint8_t subordinate_bus = secondary_bus;
 
 	pci_write8(m_bus, m_device, m_function, offsetof(pci_config_bridge_t, primary_bus), m_bus);
 	pci_write8(m_bus, m_device, m_function, offsetof(pci_config_bridge_t, secondary_bus), secondary_bus);
 	pci_write8(m_bus, m_device, m_function, offsetof(pci_config_bridge_t, subordinate_bus), subordinate_bus);
+
+	discover_children();
+
+	pci_write8(m_bus, m_device, m_function, offsetof(pci_config_bridge_t, subordinate_bus), next_free_bus - 1);
+}
+
+void device_pci_bridge::discover_children()
+{
+	// uint8_t secondary_bus = pci_read8(m_bus, m_device, m_function, offsetof(pci_config_bridge_t, secondary_bus));
+	/* TODO: */	
 }
