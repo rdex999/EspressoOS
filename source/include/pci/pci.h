@@ -59,6 +59,32 @@ typedef struct pci_config_device
 	uint8_t max_latency;
 } __attribute__((packed)) pci_config_device_t;
 
+typedef struct pci_config_bridge
+{
+	uint32_t base_address[2];
+	uint8_t primary_bus;
+	uint8_t secondary_bus;
+	uint8_t subordinate_bus;
+	uint8_t secondary_latency_timer;
+	uint8_t io_base;
+	uint8_t io_limit;
+	uint16_t secondary_status;
+	uint16_t memory_base;
+	uint16_t memory_limit;
+	uint16_t prefetchable_memory_base;
+	uint16_t prefetchable_memory_limit;
+	uint32_t prefetchable_base_upper;
+	uint32_t prefetchable_limit_upper;
+	uint16_t io_base_upper;
+	uint16_t io_limit_upper;
+	uint8_t capability_pointer;
+	uint8_t reserved[3];
+	uint8_t expansion_rom_base_address;
+	uint8_t interrupt_line;
+	uint8_t interrupt_pin;
+	uint16_t bridge_control;
+} __attribute__((packed)) pci_config_bridge_t;
+
 typedef struct pci_config 
 {
 	uint16_t vendor_id;
@@ -77,7 +103,7 @@ typedef struct pci_config
 	union
 	{
 		pci_config_device_t device;
-		/* Setup bridges and stuff here later */	
+		pci_config_bridge_t bridge;
 	};
 	
 } __attribute__((packed)) pci_config_t;
