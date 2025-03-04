@@ -20,7 +20,11 @@ include config/build.mk
 QEMU:=qemu-system-x86_64
 
 # -machine q35 	=> So there will be PCI express support.
-QEMU_FLAGS:=-m 8G -vga vmware -machine q35 -L /usr/share/OVMF/ -pflash /usr/share/OVMF/x64/OVMF_CODE.4m.fd
+# For PCI/E device management see QEMU docs, pcie at https://github.com/qemu/qemu/blob/master/docs/pcie.txt
+# To add a pci2pci bridge use: -device pci-bridge,chassis_nr=1,id=pci_bridge1
+# To add a pcie2pci bridge use: -device pcie-pci-bridge,id=pcie_pci_bridge1
+# To add a device into a bridge use: -device <dev>,bus=pci_bridge1[,addr=x]
+QEMU_FLAGS:=-m 8G -vga vmware -machine q35 -device pcie-pci-bridge,id=pcie_pci_bridge1 -L /usr/share/OVMF/ -pflash /usr/share/OVMF/x64/OVMF_CODE.4m.fd
 ISO:=dist/EspressoOS.iso
 DISK_IMG:=dist/EspressoOS.img
 DISK_IMG_SIZE:=$$((1 * 1024**3))

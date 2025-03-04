@@ -59,7 +59,7 @@ typedef struct pci_config_device
 	uint8_t max_latency;
 } __attribute__((packed)) pci_config_device_t;
 
-typedef struct pci_config_bridge
+typedef struct pci_config_bridge_pci_to_pci
 {
 	uint32_t base_address[2];
 	uint8_t primary_bus;
@@ -83,7 +83,7 @@ typedef struct pci_config_bridge
 	uint8_t interrupt_line;
 	uint8_t interrupt_pin;
 	uint16_t bridge_control;
-} __attribute__((packed)) pci_config_bridge_t;
+} __attribute__((packed)) pci_config_bridge_pci_to_pci_t;
 
 typedef struct pci_config 
 {
@@ -103,7 +103,7 @@ typedef struct pci_config
 	union
 	{
 		pci_config_device_t device;
-		pci_config_bridge_t bridge;
+		pci_config_bridge_pci_to_pci_t bridge_pci_to_pci;
 	};
 	
 } __attribute__((packed)) pci_config_t;
@@ -111,15 +111,15 @@ typedef struct pci_config
 /* Initialize PCI, detect available access mechanisms. Returns 0 on success, an error code otherwise. */
 int pci_init();
 
-/* Discover all PCI devices in the system, initialize them if possible, and add to the device tree. */
-int pci_discover_devices(uint8_t start_bus);
+/* Enumerate devices on the root bus, add them to the device tree. */
+int pci_enumerate_root_bus(uint8_t bus);
 
 /* 
  * Returns a device object describing the connected device at the given location (bus, device, function).
  * Returns NULL if no device is found at the given location.
  * Note: This function does not initialize the device nor does it add it to the device tree.
  */
-device_pci* pci_create_device(uint8_t bus, uint8_t device, uint8_t function);
+device_pci_t* pci_create_device(uint8_t bus, uint8_t device, uint8_t function);
 
 /* Read a 4 byte value from a devices memory */
 uint32_t pci_read32(uint8_t bus, uint8_t device, uint8_t function, uint16_t offset);

@@ -22,16 +22,16 @@
 #include "device/device.h"
 #include "pci/pci.h"
 
-class device_pci : public device
+class device_pci_t : public device_t
 {
 public:
-	device_pci(device_type_t type, uint8_t bus, uint8_t device, uint8_t function)
-		: ::device(type | DEVICE_TYPE_PCI), m_bus(bus), m_device(device), m_function(function) {}
+	device_pci_t(device_type_t type, uint8_t bus, uint8_t device, uint8_t function)
+		: ::device_t(type | DEVICE_TYPE_PCI), m_bus(bus), m_device(device), m_function(function) {}
 
 	virtual void initialize() override;
 
 protected:
-	virtual bool is_device(const device* dev) const override;
+	virtual bool is_device(const device_t* dev) const override;
 
 	const uint8_t m_bus;
 	const uint8_t m_device;
@@ -43,11 +43,11 @@ protected:
 	uint8_t m_subclass;
 };
 
-class device_pci_bridge : public device_pci
+class device_pci_bridge_pci2pci_t : public device_pci_t
 {
 public:
-	device_pci_bridge(uint8_t bus, uint8_t device, uint8_t function)
-		: device_pci(DEVICE_TYPE_PCI_BRIDGE, bus, device, function) {}
+	device_pci_bridge_pci2pci_t(uint8_t bus, uint8_t device, uint8_t function)
+		: device_pci_t(DEVICE_TYPE_PCI_BRIDGE, bus, device, function) {}
 
 	void initialize() override;
 	void uninitialize() override {};

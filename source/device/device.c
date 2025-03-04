@@ -17,18 +17,18 @@
 
 #include "device/device.h"
 
-device_computer g_device_root;
+device_computer_t g_device_root;
 
-void device::destroy()
+void device_t::destroy()
 {
-	device* dev = m_children;
-	while (dev)
+	device_t* device = m_children;
+	while (device)
 	{
-		device* next = dev->m_next;
+		device_t* next = device->m_next;
 		
-		dev->destroy();
+		device->destroy();
 		
-		dev = next;
+		device = next;
 	}
 
 	if(m_parent)
@@ -38,18 +38,18 @@ void device::destroy()
 	free(this);
 }
 
-device* device::find(const device* dev) const
+device_t* device_t::find(const device_t* device) const
 {
-	if(!dev)
+	if(!device)
 		return NULL;
 
-	if(is_device(dev))
-		return (device*)this;
+	if(is_device(device))
+		return (device_t*)this;
 	
-	device* child = m_children;
+	device_t* child = m_children;
 	while (child)
 	{
-		if(device* found = child->find(dev))
+		if(device_t* found = child->find(device))
 			return found;
 
 		child = child->m_next;
@@ -58,32 +58,34 @@ device* device::find(const device* dev) const
 	return NULL;
 }
 
-void device::add_child(device* dev)
+void device_t::add_child(device_t* device)
 {
-	if(!dev)
+	if(!device)
 		return;
 
-	dev->m_next = m_children;
-	m_children->m_prev = dev;
-	m_children = dev;
-	dev->m_parent = this;
+	if(m_children)
+		m_children->m_prev = device;
+
+	device->m_next = m_children;
+	m_children = device;
+	device->m_parent = this;
 }
 
-void device::remove_child(device* dev)
+void device_t::remove_child(device_t* device)
 {
-	if(!dev)
+	if(!device)
 		return;
 
-	if (dev->m_prev)
-		dev->m_prev->m_next = dev->m_next;
+	if (device->m_prev)
+		device->m_prev->m_next = device->m_next;
 
-	if (dev->m_next)
-		dev->m_next->m_prev = dev->m_prev;
+	if (device->m_next)
+		device->m_next->m_prev = device->m_prev;
 
-	if (m_children == dev)
-		m_children = dev->m_next;
+	if (m_children == device)
+		m_children = device->m_next;
 
-	dev->m_parent = NULL;
-	dev->m_prev = NULL;
-	dev->m_next = NULL;
+	device->m_parent = NULL;
+	device->m_prev = NULL;
+	device->m_next = NULL;
 }

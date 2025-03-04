@@ -47,21 +47,43 @@ int pci_init()
 	else
 		s_pci_access_mechanism = PCI_ACCESS_MECHANISM1;
 
-	return pci_discover_devices(start_bus);
+	return pci_enumerate_root_bus(start_bus);
 }
 
-int pci_discover_devices(uint8_t /* start_bus */)
+int pci_enumerate_root_bus(uint8_t bus)
 {
-	/* TODO: */
+	for(uint8_t device = 0; device < PCI_DEVICES_PER_BUS; device++)
+	{
+		for(uint8_t function = 0; function < PCI_FUNCTIONS_PER_DEVICE; function++)
+		{
+			uint16_t vendor_id = pci_read16(bus, device, function, offsetof(pci_config_t, vendor_id));
+			if(vendor_id == 0xFFFF)
+				continue;
+			
+			device_pci_t* pci_device = pci_create_device(bus, device, function);
+			if(pci_device)
+			{
+				g_device_root.add_child(pci_device);
+				pci_device->initialize();
+			}
+			
+			/* If its not a multi-function device, continue to the next device and dont enumerate functions for this device. */
+			uint8_t header_type = pci_read8(bus, device, function, offsetof(pci_config_t, header_type));
+			if(function == 0 && (header_type & (1 << 7)) == 0)		
+				break;
+		}
+	}
 	return SUCCESS;
 }
 
-device_pci* pci_create_device(uint8_t bus, uint8_t device, uint8_t function)
+device_pci_t* pci_create_device(uint8_t bus, uint8_t device, uint8_t function)
 {
-	uint8_t type = pci_read8(bus, device, function, offsetof(pci_config_t, header_type)) & 0x7F;
-	
-	if(type == 1)
-		return new device_pci_bridge(bus, device, function);
+	uint8_t header_type = pci_read8(bus, device, function, offsetof(pci_config_t, header_type));
+	uint8_t class_code = pci_read8(bus, device, function, offsetof(pci_config_t, class_code));
+	uint8_t subclass = pci_read8(bus, device, function, offsetof(pci_config_t, subclass));
+
+	if((header_type & 1) == 1 || (class_code == 6 && subclass == 4 ))
+		return new device_pci_bridge_pci2pci_t(bus, device, function);
 	
 	/* TODO: Handle regular devices */
 	return NULL; 
@@ -109,7 +131,7 @@ uint8_t pci_read8(uint8_t bus, uint8_t device, uint8_t function, uint16_t offset
 {
 	if(s_pci_access_mechanism == PCI_ACCESS_MMCONFIG)
 	{
-		return *(uint16_t*)(s_pci_mmconfig + PCI_MMCONFIG_ADDRESS_OFFSET(bus, device, function, offset));
+		return *(uint8_t*)(s_pci_mmconfig + PCI_MMCONFIG_ADDRESS_OFFSET(bus, device, function, offset));
 	}
 	else if(s_pci_access_mechanism == PCI_ACCESS_MECHANISM1)
 	{
