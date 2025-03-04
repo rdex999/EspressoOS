@@ -28,7 +28,7 @@ public:
 	device_pci_t(device_type_t type, uint8_t bus, uint8_t device, uint8_t function)
 		: ::device_t(type | DEVICE_TYPE_PCI), m_bus(bus), m_device(device), m_function(function) {}
 
-	virtual void initialize() override;
+	virtual int initialize() override;
 
 protected:
 	virtual bool is_device(const device_t* dev) const override;
@@ -49,8 +49,8 @@ public:
 	device_pci_bridge_pci2pci_t(uint8_t bus, uint8_t device, uint8_t function)
 		: device_pci_t(DEVICE_TYPE_PCI_BRIDGE, bus, device, function) {}
 
-	void initialize() override;
-	void uninitialize() override {};
+	int initialize() override;
+	int uninitialize() override { return SUCCESS; };
 
 protected:
 	void discover_children() override;

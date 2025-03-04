@@ -20,6 +20,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdlib.h>
+#include "error.h"
 
 /* Used for down-casting only. */
 typedef uint64_t device_type_t;
@@ -46,14 +47,16 @@ public:
 	/* 
 	 * Uninitializes the device, free's used resources. 
 	 * This function does not remove its children nor does it removes this device from the device tree. 
+	 * Returns 0 on success, an error code otherwise.
 	 */
-	virtual void uninitialize() = 0;
+	virtual int uninitialize() = 0;
 
 	/* 
 	 * Initialize the device and discover all its children (If any). 
 	 * This function should be called after adding the device to the device tree.
+	 * Returns 0 on success, an error code otherwise.
 	 */
-	virtual void initialize() = 0;
+	virtual int initialize() = 0;
 
 	/* 
 	 * Check if this device matches <dev>, if not check this for all children. (recursive). 
@@ -91,8 +94,8 @@ class device_computer_t : public device_t
 public:
 	device_computer_t() : device_t(DEVICE_TYPE_COMPUTER) {};
 
-	void initialize() 	override {};
-	void uninitialize() override {};
+	int initialize() 	override { return SUCCESS; };
+	int uninitialize() 	override { return SUCCESS; };
 
 	/* 
 	 * Made these public so that devices can be added to the root by themselves.

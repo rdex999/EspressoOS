@@ -20,12 +20,14 @@
 #include "pci/pci.h"
 #include "pci/device.h"
 
-void device_pci_t::initialize()
+int device_pci_t::initialize()
 {
 	m_vendor_id = pci_read16(m_bus, m_device, m_function, offsetof(pci_config_t, vendor_id));
 	m_device_id = pci_read16(m_bus, m_device, m_function, offsetof(pci_config_t, device_id));
 	m_class_code = pci_read8(m_bus, m_device, m_function, offsetof(pci_config_t, class_code));
 	m_subclass = pci_read8(m_bus, m_device, m_function, offsetof(pci_config_t, subclass));
+
+	return SUCCESS;
 }
 
 bool device_pci_t::is_device(const device_t* dev) const
@@ -67,11 +69,13 @@ bool device_pci_t::is_device(const device_t* dev) const
 	return pci_device->m_device_id == m_device_id;
 }
 
-void device_pci_bridge_pci2pci_t::initialize()
+int device_pci_bridge_pci2pci_t::initialize()
 {
 	static int next_free_bus = 1;
 
-	device_pci_t::initialize();
+	int status = device_pci_t::initialize();
+	if(status != SUCCESS)
+		return status;
 
 	uint8_t secondary_bus = next_free_bus++;
 	uint8_t subordinate_bus = secondary_bus;
@@ -83,6 +87,8 @@ void device_pci_bridge_pci2pci_t::initialize()
 	discover_children();
 
 	pci_write8(m_bus, m_device, m_function, offsetof(pci_config_t, bridge_pci_to_pci.subordinate_bus), next_free_bus - 1);
+
+	return SUCCESS;
 }
 
 void device_pci_bridge_pci2pci_t::discover_children()
