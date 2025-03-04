@@ -25,7 +25,7 @@
 #include "error.h"
 
 extern uint64_t* g_vmm_pml4;		/* The page map level 4 structure. */
-extern bitmap g_vmm_alloc_map;		/* Each entry specifies a page. Keeps track of which virtual addresses are allocated (1) or not (0). */
+extern bitmap_t g_vmm_alloc_map;	/* Each entry specifies a page. Keeps track of which virtual addresses are allocated (1) or not (0). */
 
 typedef uint64_t virt_addr_t;
 

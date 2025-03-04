@@ -18,14 +18,14 @@
 #include "mm/vmm/vmm.h"
 
 uint64_t* g_vmm_pml4;
-bitmap g_vmm_alloc_map;
+bitmap_t g_vmm_alloc_map;
 
 static virt_addr_t s_vmm_temp_map;
 static int s_vmm_temp_map_count = 0;
 
 int vmm_init()
 {
-	new(&g_vmm_alloc_map) bitmap(VMM_ALLOC_MAP, VMM_ALLOC_MAP_SIZE);
+	new(&g_vmm_alloc_map) bitmap_t(VMM_ALLOC_MAP, VMM_ALLOC_MAP_SIZE);
 
 	/* Allocate the physical memory of the kernel, including the reverse mapping. +1 for page map level 4. */
 	phys_addr_t identity_map_end = ALIGN_UP((size_t)VMM_ALLOC_MAP_END, VMM_PAGE_SIZE);

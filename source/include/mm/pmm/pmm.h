@@ -38,7 +38,7 @@ typedef uint64_t phys_addr_t;
 extern size_t g_pmm_total_blocks;		/* The total amount of memory from the memory map, including memory-mapped devices. */
 extern size_t g_pmm_memory_blocks;		/* The total amount of memory blocks in ram */
 
-extern bitmap g_pmm_alloc_map;				/* The bitmap of physical blocks. allocated (1) or free (0) */
+extern bitmap_t g_pmm_alloc_map;				/* The bitmap of physical blocks. allocated (1) or free (0) */
 
 /* NOTE: usualy, "block" referse to a bit in the bitmap */
 

@@ -26,12 +26,12 @@ typedef uint64_t bitmap_entry_t;
 
 #define BITMAP_ENTRY_BITS (sizeof(bitmap_entry_t) * 8)
 
-class bitmap
+class bitmap_t
 {
 public:
 	/* Initializes the bitmap, clears all bits. Note: <size> is the size of the bitmap in bytes. */
-	bitmap(void* buffer, size_t size);
-	bitmap() = default;
+	bitmap_t(void* buffer, size_t size);
+	bitmap_t() = default;
 
 	/* Set a single bit in the bitmap, or <count> bits starting from <index> */
 	void set(size_t index);

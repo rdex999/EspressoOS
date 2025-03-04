@@ -17,7 +17,7 @@
 
 #include "ds/bitmap.h"
 
-bitmap::bitmap(void* buffer, size_t size)
+bitmap_t::bitmap_t(void* buffer, size_t size)
 	: m_buffer((bitmap_entry_t*)buffer), m_size(size), m_bit_count(size*8)
 {
 	m_set = 0;
@@ -25,7 +25,7 @@ bitmap::bitmap(void* buffer, size_t size)
 	memset(buffer, 0, size);
 }
 
-void bitmap::set(size_t index)
+void bitmap_t::set(size_t index)
 {
 	if(!is_clear(index))
 		return;
@@ -38,7 +38,7 @@ void bitmap::set(size_t index)
 	--m_clear;
 }
 
-void bitmap::set(size_t index, size_t count)
+void bitmap_t::set(size_t index, size_t count)
 {
 	/* 
 	 * This function has 4 steps
@@ -100,7 +100,7 @@ void bitmap::set(size_t index, size_t count)
 	m_set += count;
 }
 
-void bitmap::clear(size_t index)
+void bitmap_t::clear(size_t index)
 {
 	if(is_clear(index))
 		return;
@@ -113,7 +113,7 @@ void bitmap::clear(size_t index)
 	++m_clear;
 }
 
-void bitmap::clear(size_t index, size_t count)
+void bitmap_t::clear(size_t index, size_t count)
 {
 	/* 
 	 * This function has 4 steps
@@ -175,17 +175,17 @@ void bitmap::clear(size_t index, size_t count)
 	m_set -= count;
 }
 
-bool bitmap::is_clear(size_t index) const
+bool bitmap_t::is_clear(size_t index) const
 {
 	size_t entry_idx = index / BITMAP_ENTRY_BITS;
 	size_t entry_offset = index % BITMAP_ENTRY_BITS;
 	return (m_buffer[entry_idx] & ((bitmap_entry_t)1 << entry_offset)) == (bitmap_entry_t)0;
 }
 
-bool bitmap::is_clear(size_t index, size_t count) const
+bool bitmap_t::is_clear(size_t index, size_t count) const
 {
 	/* 
-	 * This function has 4 steps (very similar to bitmap::set(size_t index, size_t count))
+	 * This function has 4 steps (very similar to bitmap_t::set(size_t index, size_t count))
 	 * 	- 1 => Check if <index> and <count> both start and end at an entry index, if so, use full entry checks (uint64_t).
 	 *	- 2 => Check the bits in the first entry, so <index> will be aligned to a bitmap entry. 
 	 * 		   (If count is greater than the amount of bits left in the entry, check the bits left in the entry)
@@ -244,12 +244,12 @@ bool bitmap::is_clear(size_t index, size_t count) const
 	return true;
 }
 
-size_t bitmap::find_clear() const
+size_t bitmap_t::find_clear() const
 {
 	return find_clear_from(0);
 }
 
-size_t bitmap::find_clear(size_t count) const
+size_t bitmap_t::find_clear(size_t count) const
 {
 	size_t index = find_clear_from(0);
 	while(index != (size_t)-1)
@@ -262,7 +262,7 @@ size_t bitmap::find_clear(size_t count) const
 	return -1;
 }
 
-size_t bitmap::find_clear_from(size_t index) const
+size_t bitmap_t::find_clear_from(size_t index) const
 {
 	if(index >= m_bit_count)
 		return -1;
@@ -306,7 +306,7 @@ size_t bitmap::find_clear_from(size_t index) const
 	return -1;
 }
 
-size_t bitmap::allocate()
+size_t bitmap_t::allocate()
 {
 	size_t index = find_clear();
 	if(index == (size_t)-1)
@@ -316,7 +316,7 @@ size_t bitmap::allocate()
 	return index;
 }
 
-size_t bitmap::allocate(size_t count)
+size_t bitmap_t::allocate(size_t count)
 {
 	size_t index = find_clear(count);
 	if(index == (size_t)-1)
