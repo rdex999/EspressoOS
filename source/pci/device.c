@@ -94,5 +94,5 @@ int device_pci_bridge_pci2pci_t::initialize()
 void device_pci_bridge_pci2pci_t::discover_children()
 {
 	uint8_t secondary_bus = pci_read8(m_bus, m_device, m_function, offsetof(pci_config_t, bridge_pci_to_pci.secondary_bus));
-	/* TODO: enumerate devices on the secondary bus */	
+	pci_enumerate_bus(secondary_bus, this);
 }

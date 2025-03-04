@@ -111,8 +111,8 @@ typedef struct pci_config
 /* Initialize PCI, detect available access mechanisms. Returns 0 on success, an error code otherwise. */
 int pci_init();
 
-/* Enumerate devices on the root bus, add them to the device tree. */
-int pci_enumerate_root_bus(uint8_t bus);
+/* Enumerate devices on the given bus, add them to the children of <parent>. */
+void pci_enumerate_bus(uint8_t bus, device_t* parent);
 
 /* 
  * Returns a device object describing the connected device at the given location (bus, device, function).

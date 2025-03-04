@@ -64,15 +64,15 @@ public:
 	 */
 	device_t* find(const device_t* dev) const;
 
-	const device_type_t m_type;
-
-protected:
 	/* Add a child to the child devices linked list. (Appends to the beginning of the list)*/
 	void add_child(device_t* dev);
-
+	
 	/* Remove a child from the child devices linked list. */
 	void remove_child(device_t* dev);
 
+	const device_type_t m_type;
+
+protected:
 	/* 
 	 * Check if this device is the same as <dev>, from the most general identifiers to the most specific.
 	 * For example if <dev> is a PCI device, then if its class ID doesnt exist, this function would check vendor ID and device ID.

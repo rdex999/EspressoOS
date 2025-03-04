@@ -47,10 +47,11 @@ int pci_init()
 	else
 		s_pci_access_mechanism = PCI_ACCESS_MECHANISM1;
 
-	return pci_enumerate_root_bus(start_bus);
+	pci_enumerate_bus(start_bus, &g_device_root);
+	return SUCCESS;
 }
 
-int pci_enumerate_root_bus(uint8_t bus)
+void pci_enumerate_bus(uint8_t bus, device_t* parent)
 {
 	for(uint8_t device = 0; device < PCI_DEVICES_PER_BUS; device++)
 	{
@@ -63,8 +64,10 @@ int pci_enumerate_root_bus(uint8_t bus)
 			device_pci_t* pci_device = pci_create_device(bus, device, function);
 			if(pci_device)
 			{
-				g_device_root.add_child(pci_device);
-				pci_device->initialize();
+				parent->add_child(pci_device);
+				int status = pci_device->initialize();
+				if(status != SUCCESS)
+					g_device_root.remove_child(pci_device);
 			}
 			
 			/* If its not a multi-function device, continue to the next device and dont enumerate functions for this device. */
@@ -73,7 +76,6 @@ int pci_enumerate_root_bus(uint8_t bus)
 				break;
 		}
 	}
-	return SUCCESS;
 }
 
 device_pci_t* pci_create_device(uint8_t bus, uint8_t device, uint8_t function)
