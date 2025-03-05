@@ -67,7 +67,7 @@ void pci_enumerate_bus(uint8_t bus, device_t* parent)
 				parent->add_child(pci_device);
 				int status = pci_device->initialize();
 				if(status != SUCCESS)
-					g_device_root.remove_child(pci_device);
+					parent.remove_child(pci_device);
 			}
 			
 			/* If its not a multi-function device, continue to the next device and dont enumerate functions for this device. */
