@@ -16,3 +16,14 @@
  */
 
 #include "storage/storage.h"
+
+bool device_storage_t::is_device(const device_t* device) const
+{
+	if(!device)
+		return false;
+	
+	if((device->m_type & DEVICE_TYPE_STORAGE) == 0)
+		return false;
+	
+	return true;
+}
