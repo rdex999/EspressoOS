@@ -18,7 +18,6 @@
 #include <stdint.h>
 #include <stddef.h>
 #include "pci/pci.h"
-#include "pci/device.h"
 
 int device_pci_t::initialize()
 {

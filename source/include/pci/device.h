@@ -20,13 +20,12 @@
 #include <stdint.h>
 #include <stddef.h>
 #include "device/device.h"
-#include "pci/pci.h"
 
 class device_pci_t : public device_t
 {
 public:
 	device_pci_t(device_type_t type, uint8_t bus, uint8_t device, uint8_t function)
-		: ::device_t(type | DEVICE_TYPE_PCI), m_bus(bus), m_device(device), m_function(function) {}
+		: device_t(type | DEVICE_TYPE_PCI), m_bus(bus), m_device(device), m_function(function) {}
 
 	virtual int initialize() override;
 

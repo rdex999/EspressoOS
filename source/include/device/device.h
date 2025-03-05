@@ -28,6 +28,7 @@ typedef uint64_t device_type_t;
 #define DEVICE_TYPE_COMPUTER		((device_type_t)1 << 0)
 #define DEVICE_TYPE_PCI				((device_type_t)1 << 1)
 #define DEVICE_TYPE_PCI_BRIDGE		(((device_type_t)1 << 2) | DEVICE_TYPE_PCI)
+#define DEVICE_TYPE_STORAGE			((device_type_t)1 << 3)
 
 class device_t
 {

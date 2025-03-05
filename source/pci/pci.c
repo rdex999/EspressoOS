@@ -16,6 +16,7 @@
  */
 
 #include "pci/pci.h"
+#include "pci/device.h"
 
 static pci_access_mechanism_t s_pci_access_mechanism = (pci_access_mechanism_t)-1;
 static uint8_t* s_pci_mmconfig = NULL;
@@ -67,7 +68,7 @@ void pci_enumerate_bus(uint8_t bus, device_t* parent)
 				parent->add_child(pci_device);
 				int status = pci_device->initialize();
 				if(status != SUCCESS)
-					parent.remove_child(pci_device);
+					parent->remove_child(pci_device);
 			}
 			
 			/* If its not a multi-function device, continue to the next device and dont enumerate functions for this device. */
