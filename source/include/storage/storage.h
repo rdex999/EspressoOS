@@ -33,16 +33,18 @@ public:
 	virtual bool is_device(const device_t* device) const override;
 
 	/* 
-	 * Read <size> bytes on offset <offset> from the sector at <lba>. 
+	 * Read <size> bytes on offset <offset> from the sector at <lba> into <buffer>. 
 	 * Returns 0 on success, an error code otherwise. 
+	 * WARNING: Untested
 	 */
-	int read(uint64_t lba, int offset, size_t size) const;
+	int read(uint64_t lba, int offset, size_t size, void* buffer) const;
 
 	/* 
-	 * Write <size> bytes on offset <offset> to the sector at <lba>. 
+	 * Write <size> bytes on offset <offset> to the sector at <lba> from <buffer>.
 	 * Returns 0 on success, an error code otherwise. 
+	 * WARNING: Untested
 	 */
-	int write(uint64_t lba, int offset, size_t size) const;
+	int write(uint64_t lba, int offset, size_t size, const void* buffer) const;
 
 protected:
 	/* 
@@ -57,5 +59,5 @@ protected:
 	 */	
 	virtual int write_sectors(uint64_t lba, int count, const void* buffer) const = 0;
 
-	int sector_size;
+	int m_sector_size;
 };
