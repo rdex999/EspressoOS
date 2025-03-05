@@ -17,10 +17,45 @@
 
 #pragma once
 
+#include <stdint.h>
+#include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
 #include "device/device.h"
 #include "pci/pci.h"
 
 class device_storage_t : public device_t
 {
+public:
+	device_storage_t()
+		: device_t(DEVICE_TYPE_STORAGE) {}
 
+	virtual bool is_device(const device_t* device) const override;
+
+	/* 
+	 * Read <size> bytes on offset <offset> from the sector at <lba>. 
+	 * Returns 0 on success, an error code otherwise. 
+	 */
+	int read(uint64_t lba, int offset, size_t size) const;
+
+	/* 
+	 * Write <size> bytes on offset <offset> to the sector at <lba>. 
+	 * Returns 0 on success, an error code otherwise. 
+	 */
+	int write(uint64_t lba, int offset, size_t size) const;
+
+protected:
+	/* 
+	 * Read <count> sectors starting from <lba>, data goes into <buffer>
+	 * Returns 0 on success, an error code otherwise.
+	 */	
+	virtual int read_sectors(uint64_t lba, int count, void* buffer) const = 0;
+
+	/* 
+	 * Write <count> sectors into <lba> from <buffer>.
+	 * Returns 0 on success, an error code otherwise.
+	 */	
+	virtual int write_sectors(uint64_t lba, int count, const void* buffer) const = 0;
+
+	int sector_size;
 };
