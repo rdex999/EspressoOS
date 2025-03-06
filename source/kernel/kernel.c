@@ -22,9 +22,12 @@
 #include "mm/vmm/vmm.h"
 #include "acpi/acpi.h"
 #include "pci/pci.h"
+#include "idt/idt.h"
+#include "cpu.h"
 
 #define VIDEO ((uint32_t*)0xA0000)
 
+extern "C" void isr_exception_page_fault();
 #ifdef __cplusplus
 	extern "C"
 #endif
@@ -39,6 +42,9 @@ void kernel_main(multiboot_info_t* mbd)
 	idt_init();
 	acpi_init(mbd);
 	pci_init();
+
+	/* Page fault, handled in idt/isr.asm */
+	*(int*)0x140000000 = 420;
 
 	while(true) { asm volatile("cli"); asm volatile("hlt"); }
 } 

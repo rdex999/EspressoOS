@@ -111,7 +111,7 @@ inline void load_idt(const idt_descriptor_t* idt_descriptor)
 {
 	asm volatile("lidt %0"
 		: 
-		: "m"(idt_descriptor)
+		: "m"(*idt_descriptor)
 	);
 }
 

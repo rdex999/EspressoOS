@@ -162,5 +162,7 @@ debugiso:
 	gdb $(BLD)/kernel.bin 								\
 		-ex "target remote localhost:1234" 				\
 		-ex "set disassembly-flavor intel" 				\
-		-ex "break $(DEBUG_BREAKPOINT)" -ex "continue" 	\
+		-ex "break $(DEBUG_BREAKPOINT)" 				\
+		-ex "break isr_exception_page_fault" 			\
+		-ex "continue" 									\
 		-ex "lay src"

@@ -20,37 +20,34 @@
 #include "cpu.h"
 #include "error.h"
 #include "common.h"
-#include "mm/vmm/vmm.h"
+
+__attribute__((aligned(0x10)))
+static idt_gate_t s_idt_table[256] = {};		/* initialize to 0 */
+
+extern "C" void isr_exception_page_fault();
 
 int idt_init()
 {
-	idt_gate_t* idt_address = (idt_gate_t*)vmm_alloc_page(VMM_PAGE_P | VMM_PAGE_RW);
-	if((virt_addr_t)idt_address == (virt_addr_t)-1)
-		return ERR_OUT_OF_MEMORY;
-
 	idt_descriptor_t descriptor = {
-		.size = sizeof(idt_gate_t) * 256,
-		.address = (uint64_t)idt_address
+		.size = sizeof(idt_gate_t) * 256 - 1,
+		.address = (uint64_t)&s_idt_table
 	};
+
+	idt_set_trap_gate(14, (uint64_t)isr_exception_page_fault);
 	
-	memset(idt_address, 0, descriptor.size);
-
 	load_idt(&descriptor);
-
-	/* TODO: Setup the gates, make ISR's */
 
 	return SUCCESS;
 }
 
-void idt_set_gate(unsigned int index, const idt_gate_t* gate)
+void idt_set_gate(uint8_t index, const idt_gate_t* gate)
 {
-	idt_gate_t* idt = idt_get_table();
-	idt[index] = *gate;
+	s_idt_table[index] = *gate;
 }
 
-void idt_set_interrupt_gate(unsigned int index, uint64_t isr_address)
+void idt_set_interrupt_gate(uint8_t index, uint64_t isr_address)
 {
-	idt_gate_t gate;
+	idt_gate_t gate = {};
 	IDT_GATE_SET_ADDRESS(&gate, isr_address);
 	IDT_GATE_SET_IST(&gate, 0);
 	gate.attributes = IDT_ATTR_GATE_TYPE_INTERRUPT | IDT_ATTR_PRESENT;
@@ -60,9 +57,9 @@ void idt_set_interrupt_gate(unsigned int index, uint64_t isr_address)
 	idt_set_gate(index, &gate);
 }
 
-void idt_set_trap_gate(unsigned int index, uint64_t isr_address)
+void idt_set_trap_gate(uint8_t index, uint64_t isr_address)
 {
-	idt_gate_t gate;
+	idt_gate_t gate = {};
 	IDT_GATE_SET_ADDRESS(&gate, isr_address);
 	IDT_GATE_SET_IST(&gate, 0);
 	gate.attributes = IDT_ATTR_GATE_TYPE_TRAP | IDT_ATTR_PRESENT;
@@ -72,9 +69,7 @@ void idt_set_trap_gate(unsigned int index, uint64_t isr_address)
 	idt_set_gate(index, &gate);
 }
 
-idt_gate_t* idt_get_table()
+extern "C" void interrupt_page_fault(uint32_t error)
 {
-	idt_descriptor_t descriptor;
-	read_idtr(&descriptor);
-	return (idt_gate_t*)descriptor.address;
+	return;
 }
