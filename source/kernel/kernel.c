@@ -36,6 +36,7 @@ void kernel_main(multiboot_info_t* mbd)
 
 	pmm_init(mmap);
 	vmm_init();
+	idt_init();
 	acpi_init(mbd);
 	pci_init();
 

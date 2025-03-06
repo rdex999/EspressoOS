@@ -16,9 +16,31 @@
  */
 
 #include "idt/idt.h"
+#include <string.h>
 #include "cpu.h"
 #include "error.h"
 #include "common.h"
+#include "mm/vmm/vmm.h"
+
+int idt_init()
+{
+	idt_gate_t* idt_address = (idt_gate_t*)vmm_alloc_page(VMM_PAGE_P | VMM_PAGE_RW);
+	if((virt_addr_t)idt_address == (virt_addr_t)-1)
+		return ERR_OUT_OF_MEMORY;
+
+	idt_descriptor_t descriptor = {
+		.size = sizeof(idt_gate_t) * 256,
+		.address = (uint64_t)idt_address
+	};
+	
+	memset(idt_address, 0, descriptor.size);
+
+	load_idt(&descriptor);
+
+	/* TODO: Setup the gates, make ISR's */
+
+	return SUCCESS;
+}
 
 void idt_set_gate(unsigned int index, const idt_gate_t* gate)
 {
