@@ -37,27 +37,27 @@ public:
 	 * Returns 0 on success, an error code otherwise. 
 	 * WARNING: Untested
 	 */
-	int read(uint64_t lba, int offset, size_t size, void* buffer) const;
+	int read(uint64_t lba, size_t offset, size_t size, void* buffer) const;
 
 	/* 
 	 * Write <size> bytes on offset <offset> to the sector at <lba> from <buffer>.
 	 * Returns 0 on success, an error code otherwise. 
 	 * WARNING: Untested
 	 */
-	int write(uint64_t lba, int offset, size_t size, const void* buffer) const;
+	int write(uint64_t lba, size_t offset, size_t size, const void* buffer) const;
 
 protected:
 	/* 
 	 * Read <count> sectors starting from <lba>, data goes into <buffer>
 	 * Returns 0 on success, an error code otherwise.
 	 */	
-	virtual int read_sectors(uint64_t lba, int count, void* buffer) const = 0;
+	virtual int read_sectors(uint64_t lba, size_t count, void* buffer) const = 0;
 
 	/* 
 	 * Write <count> sectors into <lba> from <buffer>.
 	 * Returns 0 on success, an error code otherwise.
 	 */	
-	virtual int write_sectors(uint64_t lba, int count, const void* buffer) const = 0;
+	virtual int write_sectors(uint64_t lba, size_t count, const void* buffer) const = 0;
 
-	int m_sector_size;
+	size_t m_sector_size;
 };
