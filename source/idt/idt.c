@@ -18,11 +18,24 @@
 #include "idt/idt.h"
 #include "cpu.h"
 #include "error.h"
+#include "common.h"
 
 void idt_set_gate(unsigned int index, const idt_gate_t* gate)
 {
 	idt_gate_t* idt = idt_get_table();
 	idt[index] = *gate;
+}
+
+void idt_set_interrupt_gate(unsigned int index, uint64_t isr_address)
+{
+	idt_gate_t gate;
+	IDT_GATE_SET_ADDRESS(&gate, isr_address);
+	IDT_GATE_SET_IST(&gate, 0);
+	gate.attributes = IDT_ATTR_GATE_TYPE_INTERRUPT | IDT_ATTR_PRESENT;
+	gate.segment_selector = GDT_CODE_SELECTOR;
+	gate.reserved = 0;
+
+	idt_set_gate(index, &gate);
 }
 
 idt_gate_t* idt_get_table()

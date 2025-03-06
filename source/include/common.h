@@ -33,3 +33,7 @@ extern char _kernel_end;
 #define MIN(a, b) 						((a) < (b) ? (a) : (b))
 #define MAX(a, b) 						((a) > (b) ? (a) : (b))
 #define ARR_LEN(arr)					(sizeof((arr)) / sizeof((arr)[0]))
+
+/* Idk, for now i wont create a gdt.h header, as its realy rarely used. */
+#define GDT_CODE_SELECTOR 8
+#define GDT_DATA_SELECTOR 8
