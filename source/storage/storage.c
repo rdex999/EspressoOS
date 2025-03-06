@@ -30,7 +30,7 @@ bool device_storage_t::is_device(const device_t* device) const
 
 int device_storage_t::read(uint64_t lba, int offset, size_t size, void* buffer) const
 {
-	if(!buffer)
+	if(!buffer || size == (size_t)0)
 		return ERR_INVALID_PARAMETER;
 	
 	lba += offset / m_sector_size;						/* If offset is greater than the size of a sector, update the LBA */
@@ -57,7 +57,7 @@ int device_storage_t::read(uint64_t lba, int offset, size_t size, void* buffer) 
 			goto cleanup;
 	
 		size_t read_size;
-		if(bytes_left < (size_t)m_sector_size - offset)
+		if(bytes_left < (size_t)m_sector_size - (size_t)offset)
 		{
 			read_size = bytes_left;
 		}
@@ -108,6 +108,97 @@ int device_storage_t::read(uint64_t lba, int offset, size_t size, void* buffer) 
 	}
 
 	status = SUCCESS;
+cleanup:
+	if(sector_buffer)
+		free(sector_buffer);
+
+	return status;
+}
+
+int device_storage_t::write(uint64_t lba, int offset, size_t size, const void* buffer) const
+{
+	if(!buffer || size == (size_t)0)
+		return ERR_INVALID_PARAMETER;
+	
+	lba += (size_t)offset / (size_t)m_sector_size;		/* If offset is greater than the size of a sector, update the LBA */
+	offset -= (offset / m_sector_size) * m_sector_size;
+
+	int status;
+	uint8_t* sector_buffer = NULL;
+	const uint8_t* source = (const uint8_t*)buffer;
+	uint64_t current_lba = lba;
+	size_t bytes_left = size;
+
+	/* 
+	 * If writing unaligned (by sector size), or write of size less then the size of a sector,
+	 * read the first sector (<lba>), update the needed bytes on <offset>, and write the sector back to disk.
+	 */
+	if(offset != 0 || size < (size_t)m_sector_size - (size_t)offset)
+	{
+		sector_buffer = (uint8_t*)malloc((size_t)m_sector_size);
+		if(!sector_buffer)
+			return ERR_OUT_OF_MEMORY;
+		
+		status = read_sectors(current_lba, 1, sector_buffer);
+		if(status != SUCCESS)
+			goto cleanup;
+		
+		size_t write_size;
+		if(bytes_left < (size_t)m_sector_size - (size_t)offset)
+			write_size = bytes_left;
+		else
+			write_size = (size_t)m_sector_size - (size_t)offset;
+
+		memcpy(sector_buffer + (uint64_t)offset, source, write_size);
+
+		status = write_sectors(current_lba++, 1, sector_buffer);
+		if(status != SUCCESS)
+			goto cleanup;
+		
+		bytes_left -= write_size;
+		source += write_size;
+	}
+
+	/* Check if we can write full sectors from <source> into <current_lba> */
+	if(bytes_left >= (size_t)m_sector_size)
+	{
+		int sectors = bytes_left / (size_t)m_sector_size;
+		size_t write_size = sectors * (size_t)m_sector_size;
+		status = write_sectors(current_lba, sectors, source);
+		if(status != SUCCESS)
+			goto cleanup;
+		
+		source += write_size;
+		current_lba += (uint64_t)sectors;
+		bytes_left -= write_size;
+	}
+
+	/* 
+	 * If there are still some bytes to write (and we know its less then the size of a sector), 
+	 * read the sector, update the needed bytes, and write it back to disk.
+	 */
+	if(bytes_left != (size_t)0)
+	{
+		if(!sector_buffer)
+		{
+			sector_buffer = (uint8_t*)malloc((size_t)m_sector_size);
+			if(!sector_buffer)
+				return ERR_OUT_OF_MEMORY;
+		}
+
+		status = read_sectors(current_lba, 1, sector_buffer);
+		if(status != SUCCESS)
+			goto cleanup;
+		
+		memcpy(sector_buffer, source, bytes_left);
+		
+		status = write_sectors(current_lba, 1, sector_buffer);
+		if(status != SUCCESS)
+			goto cleanup;
+	}
+
+	status = SUCCESS;
+
 cleanup:
 	if(sector_buffer)
 		free(sector_buffer);
