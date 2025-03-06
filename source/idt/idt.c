@@ -19,9 +19,15 @@
 #include "cpu.h"
 #include "error.h"
 
-idt_gate_t** idt_get_table()
+void idt_set_gate(unsigned int index, const idt_gate_t* gate)
+{
+	idt_gate_t* idt = idt_get_table();
+	idt[index] = *gate;
+}
+
+idt_gate_t* idt_get_table()
 {
 	idt_descriptor_t descriptor;
 	read_idtr(&descriptor);
-	return (idt_gate_t**)descriptor.address;
+	return (idt_gate_t*)descriptor.address;
 }

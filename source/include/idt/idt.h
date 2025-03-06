@@ -48,20 +48,20 @@ typedef struct idt_gate
 	uint8_t attributes;				/* Gate type, DPL, and present fields */
 	uint16_t address16;
 	uint32_t address32;
-	uint8_t reserved[8];			/* Must be set to 0 */
+	uint8_t reserved[4];			/* Must be set to 0 */
 } __attribute__((packed)) idt_gate_t;
 
 /* Initialize the IDT. Returns 0 on success, an error code otherwise. */
 int idt_init();
 
-/* Set the value of a gate in the IDT. Returns 0 on success, an error code otherwise. */
-int idt_set_gate(unsigned int index, const idt_gate_t* gate);
+/* Set the value of a gate in the IDT. */
+void idt_set_gate(unsigned int index, const idt_gate_t* gate);
 
-/* Make gate <index> an interrupt gate which points to <isr_address>. Returns 0 on success, an error code otherwise. */
-int idt_set_interrupt_gate(unsigned int index, uint64_t isr_address);
+/* Make gate <index> an interrupt gate which points to <isr_address>. */
+void idt_set_interrupt_gate(unsigned int index, uint64_t isr_address);
 
-/* Make gate <index> a trap gate (exceptions) which points to <isr_address>. Returns 0 on success, an error code otherwise. */
-int idt_set_trap_gate(unsigned int index, uint64_t isr_address);
+/* Make gate <index> a trap gate (exceptions) which points to <isr_address>. */
+void idt_set_trap_gate(unsigned int index, uint64_t isr_address);
 
 /* Get the address of the IDT. */
-idt_gate_t** idt_get_table();
+idt_gate_t* idt_get_table();
