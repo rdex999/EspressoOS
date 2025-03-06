@@ -18,6 +18,7 @@
 #pragma once
 
 #include <stdint.h>
+#include "idt/idt.h"
 
 inline uint64_t read_cr3()
 {
@@ -106,10 +107,17 @@ inline uint8_t inb(uint16_t port)
 	return res;
 }
 
-inline void load_idt(const void* idt_descriptor)
+inline void load_idt(const idt_descriptor_t* idt_descriptor)
 {
 	asm volatile("lidt %0"
 		: 
 		: "m"(idt_descriptor)
+	);
+}
+
+inline void read_idtr(idt_descriptor_t* idt_descriptor)
+{
+	asm volatile("sidt %0"
+		: "=m"(*idt_descriptor)
 	);
 }

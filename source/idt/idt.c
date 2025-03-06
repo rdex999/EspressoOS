@@ -16,4 +16,12 @@
  */
 
 #include "idt/idt.h"
+#include "cpu.h"
+#include "error.h"
 
+idt_gate_t** idt_get_table()
+{
+	idt_descriptor_t descriptor;
+	read_idtr(&descriptor);
+	return (idt_gate_t**)descriptor.address;
+}
