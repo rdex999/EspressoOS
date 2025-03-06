@@ -105,3 +105,11 @@ inline uint8_t inb(uint16_t port)
 	);
 	return res;
 }
+
+inline void load_idt(const void* idt_descriptor)
+{
+	asm volatile("lidt %0"
+		: 
+		: "m"(idt_descriptor)
+	);
+}
