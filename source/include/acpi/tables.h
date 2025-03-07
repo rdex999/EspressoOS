@@ -113,7 +113,7 @@ typedef struct acpi_madt_record_ioapic
 	acpi_madt_record_header_t header;		/* type 1 */
 	uint8_t ioapic_id;
 	uint8_t reserved;
-	uint32_t ioapic_address;
+	uint32_t ioapic_address;				/* The physical address of the IO APIC configuration space */
 	uint32_t global_system_interrupt_base;	/* First interrupt that this IO APIC handles. */
 } __attribute__((packed)) acpi_madt_record_ioapic_t;
 

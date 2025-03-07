@@ -536,7 +536,7 @@ int vmm_free_pte(virt_addr_t address)
 	/* Free the physical block the entry points to, and mark the entry as not preset. Basicaly free it. */
 	phys_addr_t frame = VMM_GET_ENTRY_TABLE(*pte);
 	pmm_free(frame);
-	vmm_set_virtual_of(frame, (virt_addr_t)0);
+	vmm_set_virtual_of(frame, (virt_addr_t)-1);
 	vmm_mark_free_virtual_page(address);
 	*pte = 0llu;
 	

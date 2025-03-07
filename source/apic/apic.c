@@ -22,6 +22,16 @@
 #include "error.h"
 #include "cpu.h"
 #include "acpi/acpi.h"
+#include "mm/vmm/vmm.h"
+
+typedef struct ioapic_descriptor
+{
+	void* mmio;
+	uint8_t first_gsi;
+	struct ioapic_descriptor* next;
+} ioapic_descriptor_t;
+
+static ioapic_descriptor_t* s_ioapic_descriptor;
 
 int apic_init()
 {
@@ -78,5 +88,38 @@ void pic8259_disable()
 
 int apic_ioapic_init(acpi_madt_record_ioapic_t* ioapic_record)
 {
+	if(!ioapic_record)
+		return ERR_INVALID_PARAMETER;
+	
+	ioapic_descriptor_t* descriptor = (ioapic_descriptor_t*)malloc(sizeof(ioapic_descriptor_t));
+	if(!descriptor)
+		return ERR_OUT_OF_MEMORY;
+
+	phys_addr_t ioapic_phys_base = (phys_addr_t)ioapic_record->ioapic_address;
+	descriptor->first_gsi = ioapic_record->global_system_interrupt_base;
+
+	/* 
+	 * Map the configuration space of the IO APIC. If already mapped, use its virtual address. 
+	 * The configuration space of an IO APIC is guaranteed to be 4KiB aligned, see intel specification.
+	 */
+	virt_addr_t page = vmm_get_virtual_of(ioapic_phys_base);
+	if(page == (virt_addr_t)-1)
+		descriptor->mmio = (void*)vmm_map_physical_page(ioapic_phys_base, VMM_PAGE_P | VMM_PAGE_RW);
+	else
+		descriptor->mmio = (void*)page;
+
+	if((virt_addr_t)descriptor->mmio == (virt_addr_t)-1)	
+		return ERR_OUT_OF_MEMORY;
+
+	/* Insert the descriptor to the beginning of the IO APIC list */
+	if(!s_ioapic_descriptor)
+		descriptor->next = NULL;
+	else
+		descriptor->next = s_ioapic_descriptor;
+
+	s_ioapic_descriptor = descriptor;
+
+	/* TODO: Setup IRQ's and stuff */
+
 	return SUCCESS;
 }

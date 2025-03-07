@@ -37,6 +37,7 @@ typedef uint64_t virt_addr_t;
 
 /* 
  * Reverse memory mapping. Maps physical memory to virtual memory, using 4KiB memory blocks.
+ * A value of -1 indicates an unmapped page.
  * For example, to get the virtual address of 0x13000, take its block number (0x13000 / 4096) = 0x13 = 19 and use it in the map.
  * virt_addr_t vaddr = VMM_REVERSE_MAP[0x13000 / VMM_PAGE_SIZE];
  */
