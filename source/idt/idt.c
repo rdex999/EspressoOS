@@ -69,7 +69,11 @@ void idt_set_trap_gate(uint8_t index, uint64_t isr_address)
 	idt_set_gate(index, &gate);
 }
 
-extern "C" void interrupt_page_fault(uint32_t error)
+extern "C" void interrupt_page_fault()
 {
-	return;
+	while(true)
+	{
+		asm volatile("cli");
+		asm volatile("hlt");
+	}
 }
