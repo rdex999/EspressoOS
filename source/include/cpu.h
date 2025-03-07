@@ -20,6 +20,8 @@
 #include <stdint.h>
 #include "idt/idt.h"
 
+#define CPUID_FEATURE_EDX_APIC 		(1 << 9)
+
 inline uint64_t read_cr3()
 {
 	uint64_t res;

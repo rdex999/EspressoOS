@@ -25,6 +25,14 @@
 #define ACPI_MCFG_SIGNATURE "MCFG"
 #define ACPI_MADT_SIGNATURE "APIC"
 
+#define ACPI_MADT_TYPE_LOCAL_APIC 						0
+#define ACPI_MADT_TYPE_IOAPIC 							1
+#define ACPI_MADT_TYPE_INTERRUPT_SOURCE_OVERRIDE 		2
+#define ACPI_MADT_TYPE_IOAPIC_NMI_SOURCE				3
+#define ACPI_MADT_TYPE_LOCAL_APIC_NMI					4
+#define ACPI_MADT_TYPE_LOCAL_APIC_ADDRESS_OVERRIDE		5
+#define ACPI_MADT_TYPE_PROCESSOR_LOCAL_X2APIC			9
+
 typedef struct acpi_rsdp 
 {
 	char signature[8];
@@ -156,4 +164,5 @@ typedef struct acpi_madt
 	acpi_sdt_header_t header;
 	uint32_t local_apic_address;
 	uint32_t flags;
+	acpi_madt_record_header_t records[];	/* Do not index into this array, use it as a pointer. (Structures of different sizes) */
 } __attribute__((packed)) acpi_madt_t;

@@ -19,6 +19,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include "acpi/acpi.h"
 
 #define PIC8259_MASTER_IO_COMMAND 	0x20
 #define PIC8259_MASTER_IO_DATA 		0x21
@@ -33,10 +34,11 @@ int apic_init();
 
 /* 
  * Initialize a found IO APIC. Sets IRQ's, things like that
- * Note: <ioapic_phys_base> is the physical address of the IO APIC configuration space.
  * Returns 0 on success, an error code otherwise.
  */
-int apic_ioapic_init(uint64_t ioapic_phys_base);
+int apic_ioapic_init(acpi_madt_record_ioapic_t* ioapic_record);
 
 /* Disable the 8259 PIC. Needed as we are using the APIC. */
 void pic8259_disable();
+
+/*  */
