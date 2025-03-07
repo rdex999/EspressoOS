@@ -24,14 +24,7 @@
 #include "acpi/acpi.h"
 #include "mm/vmm/vmm.h"
 
-typedef struct ioapic_descriptor
-{
-	void* mmio;
-	uint8_t first_gsi;
-	struct ioapic_descriptor* next;
-} ioapic_descriptor_t;
-
-static ioapic_descriptor_t* s_ioapic_descriptor;
+static apic_ioapic_descriptor_t* s_ioapic_descriptor;
 
 int apic_init()
 {
@@ -91,7 +84,7 @@ int apic_ioapic_init(acpi_madt_record_ioapic_t* ioapic_record)
 	if(!ioapic_record)
 		return ERR_INVALID_PARAMETER;
 	
-	ioapic_descriptor_t* descriptor = (ioapic_descriptor_t*)malloc(sizeof(ioapic_descriptor_t));
+	apic_ioapic_descriptor_t* descriptor = (apic_ioapic_descriptor_t*)malloc(sizeof(apic_ioapic_descriptor_t));
 	if(!descriptor)
 		return ERR_OUT_OF_MEMORY;
 
@@ -104,9 +97,9 @@ int apic_ioapic_init(acpi_madt_record_ioapic_t* ioapic_record)
 	 */
 	virt_addr_t page = vmm_get_virtual_of(ioapic_phys_base);
 	if(page == (virt_addr_t)-1)
-		descriptor->mmio = (void*)vmm_map_physical_page(ioapic_phys_base, VMM_PAGE_P | VMM_PAGE_RW);
+		descriptor->mmio = (uint8_t*)vmm_map_physical_page(ioapic_phys_base, VMM_PAGE_P | VMM_PAGE_RW);
 	else
-		descriptor->mmio = (void*)page;
+		descriptor->mmio = (uint8_t*)page;
 
 	if((virt_addr_t)descriptor->mmio == (virt_addr_t)-1)	
 		return ERR_OUT_OF_MEMORY;
@@ -119,7 +112,15 @@ int apic_ioapic_init(acpi_madt_record_ioapic_t* ioapic_record)
 
 	s_ioapic_descriptor = descriptor;
 
-	/* TODO: Setup IRQ's and stuff */
-
 	return SUCCESS;
+}
+
+uint32_t apic_ioapic_read32(const apic_ioapic_descriptor_t* ioapic, uint8_t reg)
+{
+	uint32_t relative_reg = reg;
+	if(reg >= APIC_IOAPIC_REG_IRQ_0)
+		relative_reg -= ioapic->first_gsi;		/* If reading a redirection entry, calculate the index for this IO APIC */
+
+	*(uint32_t*)(ioapic->mmio + APIC_IOAPIC_IOREGSEL) = (uint32_t)relative_reg;
+	return *(uint32_t*)(ioapic->mmio + APIC_IOAPIC_IOREGWIN);
 }
