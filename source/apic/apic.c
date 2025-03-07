@@ -97,7 +97,11 @@ int apic_ioapic_init(acpi_madt_record_ioapic_t* ioapic_record)
 	 */
 	virt_addr_t page = vmm_get_virtual_of(ioapic_phys_base);
 	if(page == (virt_addr_t)-1)
-		descriptor->mmio = (uint8_t*)vmm_map_physical_page(ioapic_phys_base, VMM_PAGE_P | VMM_PAGE_RW);
+		/* It is recommended to disable caching on IO APIC configuration space, so do it. */
+		descriptor->mmio = (uint8_t*)vmm_map_physical_page(
+			ioapic_phys_base, 
+			VMM_PAGE_P | VMM_PAGE_RW | VMM_PAGE_PCD | VMM_PAGE_PTE_PAT
+		);
 	else
 		descriptor->mmio = (uint8_t*)page;
 
