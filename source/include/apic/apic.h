@@ -20,6 +20,11 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#define PIC8259_MASTER_IO_COMMAND 	0x20
+#define PIC8259_MASTER_IO_DATA 		0x21
+#define PIC8259_SLAVE_IO_COMMAND 	0xA1
+#define PIC8259_SLAVE_IO_DATA 		0xA1
+
 /* 
  * Initialize all local and IO APIC's on the system. 
  * Returns 0 on success, an error code otherwise.
@@ -33,8 +38,5 @@ int apic_init();
  */
 int apic_ioapic_init(uint64_t ioapic_phys_base);
 
-/* 
- * Disable the 8259 PIC. Needed as we are using the APIC.
- * Returns 0 on success, an error code otherwise. 
- */
-int apic_disable_pic8259();
+/* Disable the 8259 PIC. Needed as we are using the APIC. */
+void pic8259_disable();

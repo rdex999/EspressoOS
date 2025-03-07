@@ -16,3 +16,20 @@
  */
 
 #include "apic/apic.h"
+
+#include "error.h"
+#include "cpu.h"
+
+int apic_init()
+{
+	pic8259_disable();
+
+	return SUCCESS;
+}
+
+void pic8259_disable()
+{
+	/* Mask all interrupts on the master and slave PIC's */
+    outb(PIC8259_MASTER_IO_DATA, 0xff);
+    outb(PIC8259_SLAVE_IO_DATA, 0xff);
+}
