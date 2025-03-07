@@ -68,15 +68,18 @@ extern interrupt_page_fault
 
 section .text
 
+
+; Saves registers, prepares the error code as a parameter to the handler, calls the handler restores registers and returns.
+; To use this routine, push the address of the handler, and jump to this routine.
 run_exception_handler:
-	ISR_SAVE_REGS
+	ISR_SAVE_REGS								; Save all registers
 
-	mov rdi, [rsp + SAVED_REGS_STACK_SIZE + 8]
-	call [rsp + SAVED_REGS_STACK_SIZE]
+	mov edi, [rsp + SAVED_REGS_STACK_SIZE + 8]	; The error code is placed at the top of the stack, (last pushed) so get it
+	call [rsp + SAVED_REGS_STACK_SIZE]			; The handler was pushed to the stack, so its right above the saved registers
 
-	ISR_RESTORE_REGS
-	add rsp, 8 + 8
-	iretq
+	ISR_RESTORE_REGS							; Restore all registers
+	add rsp, 8 + 8								; Before returning, remove the handler function address and the error code from the stack
+	iretq										; 64bit interrupt return.
 
 isr_exception_page_fault:
 	push interrupt_page_fault

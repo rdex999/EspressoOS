@@ -24,8 +24,8 @@ bits 32
 global start
 extern kernel_main
 
-%include "x86/boot/gdt.inc"
-%include "x86/boot/lm_setup.inc"
+%include "boot/gdt.inc"
+%include "boot/lm_setup.inc"
 
 ; General multiboot2 tag.
 ; PARAMETERS
