@@ -127,11 +127,11 @@ uint32_t apic_ioapic_read32(const apic_ioapic_descriptor_t* ioapic, uint8_t reg)
 
 uint64_t apic_ioapic_read64(const apic_ioapic_descriptor_t* ioapic, uint8_t reg)
 {
-	uint32_t relative_reg = reg;
 	uint32_t low, high;
 	if(reg >= APIC_IOAPIC_REG_IRQ_0)
 	{
-		relative_reg -= ioapic->first_gsi;		/* If reading a redirection entry, calculate the index for this IO APIC */
+		/* If reading a redirection entry, calculate the index for this IO APIC */
+		uint32_t relative_reg = reg - ioapic->first_gsi;
 
 		*(uint32_t volatile*)(ioapic->mmio + APIC_IOAPIC_IOREGSEL) = (uint32_t)relative_reg;
 		low = *(uint32_t volatile*)(ioapic->mmio + APIC_IOAPIC_IOREGWIN);
@@ -141,10 +141,20 @@ uint64_t apic_ioapic_read64(const apic_ioapic_descriptor_t* ioapic, uint8_t reg)
 	}
 	else
 	{
-		*(uint32_t volatile*)(ioapic->mmio + APIC_IOAPIC_IOREGSEL) = (uint32_t)relative_reg;
+		*(uint32_t volatile*)(ioapic->mmio + APIC_IOAPIC_IOREGSEL) = (uint32_t)reg;
 		low = *(uint32_t volatile*)(ioapic->mmio + APIC_IOAPIC_IOREGWIN);
 		high = *(uint32_t volatile*)(ioapic->mmio + APIC_IOAPIC_IOREGWIN);
 	}
 
 	return (uint64_t)low | ((uint64_t)high << 32);
+}
+
+void apic_ioapic_write32(const apic_ioapic_descriptor_t* ioapic, uint8_t reg, uint32_t value)
+{
+	uint32_t relative_reg = reg;
+	if(reg >= APIC_IOAPIC_REG_IRQ_0)
+		relative_reg -= ioapic->first_gsi;		/* If reading a redirection entry, calculate the index for this IO APIC */
+
+	*(uint32_t volatile*)(ioapic->mmio + APIC_IOAPIC_IOREGSEL) = (uint32_t)relative_reg;
+	*(uint32_t volatile*)(ioapic->mmio + APIC_IOAPIC_IOREGWIN) = value;
 }
