@@ -83,3 +83,77 @@ typedef struct acpi_mcfg
 	uint8_t reserved[8];
 	acpi_mcfg_config_t configurations[];
 } __attribute__((packed)) acpi_mcfg_t;
+
+/* Structures for the MADT table, and its records. For more info, see: https://wiki.osdev.org/MADT */
+
+typedef struct acpi_madt_record_header
+{
+	uint8_t type;
+	uint8_t size;
+} __attribute__((packed)) acpi_madt_record_header_t;
+
+typedef struct acpi_madt_record_local_apic
+{
+	acpi_madt_record_header_t header;		/* type 0 */
+	uint8_t acpi_processor_id;
+	uint8_t apic_id;
+	uint32_t flags;
+} __attribute__((packed)) acpi_madt_record_local_apic_t;
+
+typedef struct acpi_madt_record_ioapic
+{
+	acpi_madt_record_header_t header;		/* type 1 */
+	uint8_t ioapic_id;
+	uint8_t reserved;
+	uint32_t ioapic_address;
+	uint32_t global_system_interrupt_base;	/* First interrupt that this IO APIC handles. */
+} __attribute__((packed)) acpi_madt_record_ioapic_t;
+
+typedef struct acpi_madt_record_interrupt_source_override
+{
+	acpi_madt_record_header_t header;		/* type 2 */
+	uint8_t bus_source;
+	uint8_t irq_source;
+	uint16_t flags;
+	uint32_t global_system_interrupt;
+} __attribute__((packed)) acpi_madt_record_interrupt_source_override_t;
+
+typedef struct acpi_madt_record_ioapic_nmi_source
+{
+	acpi_madt_record_header_t header; 		/* type 3 */
+	uint8_t nmi_source;
+	uint8_t reserved;
+	uint16_t flags;
+	uint32_t global_system_interrupt;
+} __attribute__((packed)) acpi_madt_record_ioapic_nmi_source_t;
+
+typedef struct acpi_madt_record_local_apic_nmi
+{
+	acpi_madt_record_header_t header;		/* type 4 */
+	uint8_t processor_id;					/* 0xFF - all processors */
+	uint16_t flags;
+	uint8_t lint;							/* 0 or 1 */
+} __attribute__((packed)) acpi_madt_record_local_apic_nmi_t;
+
+typedef struct acpi_madt_record_local_apic_address_override
+{
+	acpi_madt_record_header_t header;		/* type 5 */
+	uint16_t reserved;
+	uint64_t local_apic_address;			/* Physical address of this local APIC. */
+} __attribute__((packed)) acpi_madt_record_local_apic_address_override_t;
+
+typedef struct acpi_madt_record_processor_local_x2apic
+{
+	acpi_madt_record_header_t header;		/* type 9 */
+	uint16_t reserved;
+	uint32_t local_x2apic_id;
+	uint32_t flags;							/* Same aas local APIC flags */
+	uint32_t acpi_id;
+} __attribute__((packed)) acpi_madt_record_processor_local_x2apic_t;
+
+typedef struct acpi_madt
+{
+	acpi_sdt_header_t header;
+	uint32_t local_apic_address;
+	uint32_t flags;
+} __attribute__((packed)) acpi_madt_t;
