@@ -20,8 +20,17 @@
 #include <stdint.h>
 #include "idt/idt.h"
 
-#define CPUID_FEATURE_EDX_APIC 		(1 << 9)
-#define CPUID_CODE_GET_FEATURES 	1
+/* 
+ * For more info about CPUID, its codes and return values see intel documentation at: 
+ * https://www.intel.com/content/www/us/en/content-details/843860/intel-architecture-instruction-set-extensions-programming-reference.html?wapkw=Intel%20Architecture%20Instruction%20Set%20Extensions%20Programming%20Reference
+ * Page 18 in the PDF version. 
+ */
+#define CPUID_CODE_GET_FEATURES 				1
+
+#define CPUID_FEATURE_EDX_APIC 					(1 << 9)
+#define CPUID_FEATURE_EBX_INIT_APIC_ID(ebx)		(((ebx) >> 24) & 0xFF)
+
+#define MSR_IA32_APIC_BASE						0x1B
 
 inline uint64_t read_cr3()
 {
@@ -134,5 +143,24 @@ inline void cpuid(uint32_t code, uint32_t* eax, uint32_t* ebx, uint32_t* ecx, ui
 	asm volatile("cpuid"
 		: "=a"(*eax), "=b"(*ebx), "=c"(*ecx), "=d"(*edx)
 		: "a"(code)
+	);
+}
+
+inline uint64_t cpu_read_msr(uint32_t msr)
+{
+	uint32_t low, high;
+	asm volatile("rdmsr"
+		: "=a"(low), "=d"(high)
+		: "c"(msr)
+	);
+
+	return (uint64_t)low | ((uint64_t)high << 32);
+}
+
+inline void cpu_write_msr(uint32_t msr, uint64_t value)
+{
+	asm volatile("wrmsr"
+		:
+		: "c"(msr), "a"((uint32_t)value), "d"((uint32_t)(value >> 32))
 	);
 }
