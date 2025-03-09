@@ -21,6 +21,7 @@
 #include "idt/idt.h"
 
 #define CPUID_FEATURE_EDX_APIC 		(1 << 9)
+#define CPUID_CODE_GET_FEATURES 	1
 
 inline uint64_t read_cr3()
 {
@@ -121,5 +122,17 @@ inline void read_idtr(idt_descriptor_t* idt_descriptor)
 {
 	asm volatile("sidt %0"
 		: "=m"(*idt_descriptor)
+	);
+}
+
+/* 
+ * Perform the CPUID instruction with EAX=<code>. 
+ * Note: <eax>, <ebx>, <ecx>, <edx> must point to a valid memory address. 
+ */
+inline void cpuid(uint32_t code, uint32_t* eax, uint32_t* ebx, uint32_t* ecx, uint32_t* edx)
+{
+	asm volatile("cpuid"
+		: "=a"(*eax), "=b"(*ebx), "=c"(*ecx), "=d"(*edx)
+		: "a"(code)
 	);
 }
