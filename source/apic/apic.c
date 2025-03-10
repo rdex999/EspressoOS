@@ -24,7 +24,12 @@
 #include "mm/vmm/vmm.h"
 
 static apic_ioapic_descriptor_t* s_ioapic_descriptor;
-static uint64_t s_lapic_address_override = (uint64_t)-1; /* -1 means the MADT has no entry of type 5 (LAPIC address override) */
+
+/* 
+ * The virtual address override, represents the physical address of the mmio for all local APIC's on the system.
+ * -1 means the MADT has no entry of type 5 (LAPIC address override), and we should read IA32_APIC_BASE MSR instead.
+ */
+static uint64_t s_lapic_address_override = (uint64_t)-1; 
 
 int apic_init()
 {
@@ -72,6 +77,8 @@ int apic_init()
 				status = ERR_OUT_OF_MEMORY;
 				goto cleanup;
 			}
+
+			break;
 		}
 		
 		default:
@@ -198,4 +205,20 @@ uint64_t apic_lapic_get_mmio()
 	}
 		
 	return s_lapic_address_override;
+}
+
+uint32_t apic_lapic_read_reg(uint16_t reg)
+{
+	uint8_t* mmio = (uint8_t*)apic_lapic_get_mmio();
+	if(mmio)
+		return *(uint32_t*)(mmio + (uint64_t)reg);
+	
+	return 0;
+}
+
+void apic_lapic_write_reg(uint16_t reg, uint32_t value)
+{
+	uint8_t* mmio = (uint8_t*)apic_lapic_get_mmio();
+	if(mmio)
+		*(uint32_t*)(mmio + (uint64_t)reg) = value; 
 }

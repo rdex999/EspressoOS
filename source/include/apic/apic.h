@@ -39,6 +39,8 @@
 #define APIC_IOAPIC_REG_IRQ_0				0x10
 #define APIC_IOAPIC_REG_IOREDTBL(irq)		(APIC_IOAPIC_REG_IRQ_0 + 2 * (irq)) /* IOAPIC redirection entry register for a IRQ <irq> */
 
+#define APIC_LAPIC_REG_SPURIOUS_INTERRUPT_VECTOR	0xF0
+
 typedef struct apic_ioapic_descriptor
 {
 	uint8_t* mmio;
@@ -74,7 +76,19 @@ void apic_ioapic_write32(const apic_ioapic_descriptor_t* ioapic, uint8_t reg, ui
 void apic_ioapic_write64(const apic_ioapic_descriptor_t* ioapic, uint8_t reg, uint64_t value);
 
 /* 
+ * Initialize the local APIC of the current CPU. 
+ * Return 0 on success, an error code otherwise.
+ */
+int apic_lapic_init();
+
+/* 
  * Get the virtual address representing the physical address of the configuration space for the local APIC of the current CPU. 
  * Returns a valid virtual address on success, NULL on failure. 
  */
 uint64_t apic_lapic_get_mmio();
+
+/* Read a register in the local APIC configuration space. */
+uint32_t apic_lapic_read_reg(uint16_t reg);
+
+/* Write to a register in the local APIC configuration space. Returns 0 on failure. */
+void apic_lapic_write_reg(uint16_t reg, uint32_t value);
