@@ -24,6 +24,7 @@
 #include "mm/vmm/vmm.h"
 
 static apic_ioapic_descriptor_t* s_ioapic_descriptor;
+static uint64_t s_lapic_address_override = (uint64_t)-1; /* -1 means the MADT has no entry of type 5 (LAPIC address override) */
 
 int apic_init()
 {
@@ -56,6 +57,21 @@ int apic_init()
 				goto cleanup;
 
 			break;
+		}
+
+		case ACPI_MADT_TYPE_LOCAL_APIC_ADDRESS_OVERRIDE:
+		{
+			/* The physical address of the local APIC configuration space if guaranteed to be 4 KiB aligned, see intel spec. */
+			acpi_madt_record_lapic_address_override_t* lapic_override = (acpi_madt_record_lapic_address_override_t*)record;
+			s_lapic_address_override = vmm_map_physical_page(
+				lapic_override->lapic_address, 
+				VMM_PAGE_P | VMM_PAGE_RW | VMM_PAGE_PCD | VMM_PAGE_PTE_PAT	/* Disable caching, IO memory shouldnt be cached. */
+			);
+			if((virt_addr_t)s_lapic_address_override == (virt_addr_t)-1)
+			{
+				status = ERR_OUT_OF_MEMORY;
+				goto cleanup;
+			}
 		}
 		
 		default:
@@ -166,4 +182,20 @@ void apic_ioapic_write64(const apic_ioapic_descriptor_t* ioapic, uint8_t reg, ui
 
 	*(uint32_t volatile*)(ioapic->mmio + APIC_IOAPIC_IOREGSEL) = (uint32_t)relative_reg + 1;
 	*(uint32_t volatile*)(ioapic->mmio + APIC_IOAPIC_IOREGWIN) = (uint32_t)(value >> 32);
+}
+
+uint64_t apic_lapic_get_mmio()
+{
+	if(s_lapic_address_override == (uint64_t)-1)
+	{
+		/* Only bits 12-31 are used for the physical address of the mmio. */
+		phys_addr_t phys = cpu_read_msr(MSR_IA32_APIC_BASE) & ~(phys_addr_t)(4096 - 1); 
+		virt_addr_t virt = vmm_get_virtual_of(phys);
+		if(virt == (virt_addr_t)-1)
+			return (uint64_t)-1;
+
+		return virt;
+	}
+		
+	return s_lapic_address_override;
 }

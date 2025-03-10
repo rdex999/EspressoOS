@@ -72,3 +72,9 @@ void apic_ioapic_write32(const apic_ioapic_descriptor_t* ioapic, uint8_t reg, ui
 
 /* Write a 64 bit value into a register in an IO APIC's configuration space. */
 void apic_ioapic_write64(const apic_ioapic_descriptor_t* ioapic, uint8_t reg, uint64_t value);
+
+/* 
+ * Get the virtual address representing the physical address of the configuration space for the local APIC of the current CPU. 
+ * Returns a valid virtual address on success, NULL on failure. 
+ */
+uint64_t apic_lapic_get_mmio();

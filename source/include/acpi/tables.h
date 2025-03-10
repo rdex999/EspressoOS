@@ -100,13 +100,13 @@ typedef struct acpi_madt_record_header
 	uint8_t size;
 } __attribute__((packed)) acpi_madt_record_header_t;
 
-typedef struct acpi_madt_record_local_apic
+typedef struct acpi_madt_record_lapic
 {
 	acpi_madt_record_header_t header;		/* type 0 */
 	uint8_t acpi_processor_id;
 	uint8_t apic_id;
 	uint32_t flags;
-} __attribute__((packed)) acpi_madt_record_local_apic_t;
+} __attribute__((packed)) acpi_madt_record_lapic_t;
 
 typedef struct acpi_madt_record_ioapic
 {
@@ -135,20 +135,20 @@ typedef struct acpi_madt_record_ioapic_nmi_source
 	uint32_t global_system_interrupt;
 } __attribute__((packed)) acpi_madt_record_ioapic_nmi_source_t;
 
-typedef struct acpi_madt_record_local_apic_nmi
+typedef struct acpi_madt_record_lapic_nmi
 {
 	acpi_madt_record_header_t header;		/* type 4 */
 	uint8_t processor_id;					/* 0xFF - all processors */
 	uint16_t flags;
 	uint8_t lint;							/* 0 or 1 */
-} __attribute__((packed)) acpi_madt_record_local_apic_nmi_t;
+} __attribute__((packed)) acpi_madt_record_lapic_nmi_t;
 
-typedef struct acpi_madt_record_local_apic_address_override
+typedef struct acpi_madt_record_lapic_address_override
 {
 	acpi_madt_record_header_t header;		/* type 5 */
 	uint16_t reserved;
-	uint64_t local_apic_address;			/* Physical address of this local APIC. */
-} __attribute__((packed)) acpi_madt_record_local_apic_address_override_t;
+	uint64_t lapic_address;			/* Physical address of this local APIC. */
+} __attribute__((packed)) acpi_madt_record_lapic_address_override_t;
 
 typedef struct acpi_madt_record_processor_local_x2apic
 {
@@ -162,7 +162,7 @@ typedef struct acpi_madt_record_processor_local_x2apic
 typedef struct acpi_madt
 {
 	acpi_sdt_header_t header;
-	uint32_t local_apic_address;
+	uint32_t lapic_address;
 	uint32_t flags;
 	acpi_madt_record_header_t records[];	/* Do not index into this array, use it as a pointer. (Structures of different sizes) */
 } __attribute__((packed)) acpi_madt_t;
