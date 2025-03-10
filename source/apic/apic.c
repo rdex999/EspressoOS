@@ -86,7 +86,7 @@ int apic_init()
 		}
 	}
 
-	status = SUCCESS;
+	status = apic_lapic_init();
 
 cleanup:
 	free(madt);
@@ -191,11 +191,32 @@ void apic_ioapic_write64(const apic_ioapic_descriptor_t* ioapic, uint8_t reg, ui
 	*(uint32_t volatile*)(ioapic->mmio + APIC_IOAPIC_IOREGWIN) = (uint32_t)(value >> 32);
 }
 
+int apic_lapic_init()
+{
+	if(s_lapic_address_override == (uint64_t)-1)
+	{
+		/* Only bits 12-63 are used for the physical address of the mmio. */
+		phys_addr_t phys = cpu_read_msr(MSR_IA32_APIC_BASE) & ~(phys_addr_t)(4096 - 1); 
+		s_lapic_address_override = vmm_map_physical_page(
+			phys,
+			VMM_PAGE_P | VMM_PAGE_RW | VMM_PAGE_PCD | VMM_PAGE_PTE_PAT
+		);
+
+		if(s_lapic_address_override == (virt_addr_t)-1)
+			return ERR_OUT_OF_MEMORY;
+	}
+
+	uint32_t old_spurious = apic_lapic_read_reg(APIC_LAPIC_REG_SPURIOUS_INTERRUPT_VECTOR);
+	apic_lapic_write_reg(APIC_LAPIC_REG_SPURIOUS_INTERRUPT_VECTOR, old_spurious | 0xFF | 0x100);
+
+	return SUCCESS;
+}
+
 uint64_t apic_lapic_get_mmio()
 {
 	if(s_lapic_address_override == (uint64_t)-1)
 	{
-		/* Only bits 12-31 are used for the physical address of the mmio. */
+		/* Only bits 12-63 are used for the physical address of the mmio. */
 		phys_addr_t phys = cpu_read_msr(MSR_IA32_APIC_BASE) & ~(phys_addr_t)(4096 - 1); 
 		virt_addr_t virt = vmm_get_virtual_of(phys);
 		if(virt == (virt_addr_t)-1)
