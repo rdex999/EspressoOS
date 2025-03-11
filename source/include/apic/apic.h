@@ -63,7 +63,7 @@
 typedef struct apic_ioapic_descriptor
 {
 	uint8_t* mmio;
-	uint8_t first_gsi;
+	uint8_t first_irq;
 	struct apic_ioapic_descriptor* next;
 } apic_ioapic_descriptor_t;
 
@@ -91,6 +91,12 @@ int apic_init();
 void pic8259_disable();
 
 /* 
+ * Map IRQ <irq> to interrupt vector <interrupt>.
+ * Returns 0 on success, an error code otherwise.
+ */
+int apic_map_irq(uint8_t irq, uint8_t interrupt);
+
+/* 
  * Initialize a found IO APIC. Sets IRQ's, things like that
  * Returns 0 on success, an error code otherwise.
  */
@@ -101,6 +107,9 @@ int apic_ioapic_init(acpi_madt_record_ioapic_t* ioapic_record);
  * Returns 0 on success, an error code otherwise.
  */
 int apic_ioapic_map_irq(const apic_ioapic_descriptor_t* ioapic, uint8_t irq, uint8_t interrupt);
+
+/* Check if IRQ <irq> is in the IRQ range of IO APIC <ioapic>. Returns true if in range, false if not. */
+bool apic_ioapic_irq_in_range(const apic_ioapic_descriptor_t* ioapic, uint8_t irq);
 
 /* Read a 32 bit register from an IO APIC's configuration space. */
 uint32_t apic_ioapic_read32(const apic_ioapic_descriptor_t* ioapic, uint8_t reg);

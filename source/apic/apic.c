@@ -101,6 +101,20 @@ void pic8259_disable()
     outb(PIC8259_SLAVE_IO_DATA, 0xff);
 }
 
+int apic_map_irq(uint8_t irq, uint8_t interrupt)
+{
+	apic_ioapic_descriptor_t* ioapic = s_ioapic_descriptor;
+	while(ioapic)
+	{
+		if(apic_ioapic_irq_in_range(ioapic, irq))
+			return apic_ioapic_map_irq(ioapic, irq, interrupt);
+		
+		ioapic = ioapic->next;
+	}
+
+	return ERR_IRQ_NOT_SUPPORTED;
+}
+
 int apic_ioapic_init(acpi_madt_record_ioapic_t* ioapic_record)
 {
 	if(!ioapic_record)
@@ -111,7 +125,7 @@ int apic_ioapic_init(acpi_madt_record_ioapic_t* ioapic_record)
 		return ERR_OUT_OF_MEMORY;
 
 	phys_addr_t ioapic_phys_base = (phys_addr_t)ioapic_record->ioapic_address;
-	descriptor->first_gsi = ioapic_record->global_system_interrupt_base;
+	descriptor->first_irq = ioapic_record->global_system_interrupt_base;
 
 	/* 
 	 * Map the configuration space of the IO APIC. If already mapped, use its virtual address. 
@@ -143,13 +157,10 @@ int apic_ioapic_init(acpi_madt_record_ioapic_t* ioapic_record)
 
 int apic_ioapic_map_irq(const apic_ioapic_descriptor_t* ioapic, uint8_t irq, uint8_t interrupt)
 {
-	if(!ioapic)
+	if(!ioapic || !apic_ioapic_irq_in_range(ioapic, irq))
 		return ERR_INVALID_PARAMETER;
 
-	/* Check if the given IRQ is mapped in this IO APIC */
-	uint32_t max_redtbl = APIC_IOAPIC_IOAPICVER_MAX_REDTBL(apic_ioapic_read32(ioapic, APIC_IOAPIC_REG_IOAPICVER));
-	if(irq < ioapic->first_gsi || irq > APIC_IOAPIC_REDTBL_TO_IRQ(max_redtbl))
-		return ERR_INVALID_PARAMETER;
+	uint8_t ioapic_irq = irq - ioapic->first_irq;
 
 	/* 
 	 * TODO: When making multiprocessing and all of that, 
@@ -159,7 +170,8 @@ int apic_ioapic_map_irq(const apic_ioapic_descriptor_t* ioapic, uint8_t irq, uin
 	cpuid(CPUID_CODE_GET_FEATURES, &unused, &ebx, &unused, &unused);
 	uint8_t local_apic_id = CPUID_FEATURE_EBX_INIT_APIC_ID(ebx);
 
-	uint32_t irq_redtbl_reg = APIC_IOAPIC_REG_IOREDTBL(irq);
+	uint32_t irq_redtbl_reg = APIC_IOAPIC_REG_IOREDTBL(ioapic_irq);
+
 	apic_ioapic_redtbl_entry_t entry = {
 		.interrupt 			= interrupt,
 		.delivery_mode 		= APIC_IOAPIC_REDTBL_DELIVERY_MODE_FIXED,
@@ -178,28 +190,32 @@ int apic_ioapic_map_irq(const apic_ioapic_descriptor_t* ioapic, uint8_t irq, uin
 	return SUCCESS;
 }
 
+bool apic_ioapic_irq_in_range(const apic_ioapic_descriptor_t* ioapic, uint8_t irq)
+{
+	if(!ioapic)
+		return false;
+
+	uint32_t version_reg = apic_ioapic_read32(ioapic, APIC_IOAPIC_REG_IOAPICVER);
+	uint32_t max_redtbl = APIC_IOAPIC_IOAPICVER_MAX_REDTBL(version_reg);
+	uint8_t last_irq = ioapic->first_irq + APIC_IOAPIC_REDTBL_TO_IRQ(max_redtbl);
+
+	return irq > ioapic->first_irq && irq <= last_irq;
+}
+
 uint32_t apic_ioapic_read32(const apic_ioapic_descriptor_t* ioapic, uint8_t reg)
 {
-	uint32_t relative_reg = reg;
-	if(reg >= APIC_IOAPIC_REG_IRQ_0)
-		relative_reg -= ioapic->first_gsi;		/* If reading a redirection entry, calculate the index for this IO APIC */
-
-	*(uint32_t volatile*)(ioapic->mmio + APIC_IOAPIC_IOREGSEL) = (uint32_t)relative_reg;
+	*(uint32_t volatile*)(ioapic->mmio + APIC_IOAPIC_IOREGSEL) = (uint32_t)reg;
 	return *(uint32_t volatile*)(ioapic->mmio + APIC_IOAPIC_IOREGWIN);
 }
 
 uint64_t apic_ioapic_read64(const apic_ioapic_descriptor_t* ioapic, uint8_t reg)
 {
 	uint32_t low, high;
-	uint32_t relative_reg = reg;
-
-	if(reg >= APIC_IOAPIC_REG_IRQ_0)
-		relative_reg -= ioapic->first_gsi;		/* If reading a redirection entry, calculate the index for this IO APIC */
-
-	*(uint32_t volatile*)(ioapic->mmio + APIC_IOAPIC_IOREGSEL) = (uint32_t)relative_reg;
+	
+	*(uint32_t volatile*)(ioapic->mmio + APIC_IOAPIC_IOREGSEL) = (uint32_t)reg;
 	low = *(uint32_t volatile*)(ioapic->mmio + APIC_IOAPIC_IOREGWIN);
 
-	*(uint32_t volatile*)(ioapic->mmio + APIC_IOAPIC_IOREGSEL) = (uint32_t)relative_reg + 1;
+	*(uint32_t volatile*)(ioapic->mmio + APIC_IOAPIC_IOREGSEL) = (uint32_t)reg + 1;
 	high = *(uint32_t volatile*)(ioapic->mmio + APIC_IOAPIC_IOREGWIN);
 	
 	return (uint64_t)low | ((uint64_t)high << 32);
@@ -207,24 +223,16 @@ uint64_t apic_ioapic_read64(const apic_ioapic_descriptor_t* ioapic, uint8_t reg)
 
 void apic_ioapic_write32(const apic_ioapic_descriptor_t* ioapic, uint8_t reg, uint32_t value)
 {
-	uint32_t relative_reg = reg;
-	if(reg >= APIC_IOAPIC_REG_IRQ_0)
-		relative_reg -= ioapic->first_gsi;		/* If reading a redirection entry, calculate the index for this IO APIC */
-
-	*(uint32_t volatile*)(ioapic->mmio + APIC_IOAPIC_IOREGSEL) = (uint32_t)relative_reg;
+	*(uint32_t volatile*)(ioapic->mmio + APIC_IOAPIC_IOREGSEL) = (uint32_t)reg;
 	*(uint32_t volatile*)(ioapic->mmio + APIC_IOAPIC_IOREGWIN) = value;
 }
 
 void apic_ioapic_write64(const apic_ioapic_descriptor_t* ioapic, uint8_t reg, uint64_t value)
 {
-	uint64_t relative_reg = reg;
-	if(reg >= APIC_IOAPIC_REG_IRQ_0)
-		relative_reg -= ioapic->first_gsi;		/* If reading a redirection entry, calculate the index for this IO APIC */
-
-	*(uint32_t volatile*)(ioapic->mmio + APIC_IOAPIC_IOREGSEL) = (uint32_t)relative_reg;
+	*(uint32_t volatile*)(ioapic->mmio + APIC_IOAPIC_IOREGSEL) = (uint32_t)reg;
 	*(uint32_t volatile*)(ioapic->mmio + APIC_IOAPIC_IOREGWIN) = (uint32_t)value;
 
-	*(uint32_t volatile*)(ioapic->mmio + APIC_IOAPIC_IOREGSEL) = (uint32_t)relative_reg + 1;
+	*(uint32_t volatile*)(ioapic->mmio + APIC_IOAPIC_IOREGSEL) = (uint32_t)reg + 1;
 	*(uint32_t volatile*)(ioapic->mmio + APIC_IOAPIC_IOREGWIN) = (uint32_t)(value >> 32);
 }
 
