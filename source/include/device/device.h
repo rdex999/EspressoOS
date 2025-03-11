@@ -85,12 +85,12 @@ public:
 	 */
 	void* m_self;
 
+protected:
 	/* 
 	 * Check if this device is the same as <dev>, from the most general identifiers to the most specific.
 	 * For example if <dev> is a PCI device, then if its class ID doesnt exist, this function would check vendor ID and device ID.
 	 */
 	virtual bool is_device(const device_t* dev) const = 0;
-protected:
 	
 	/* Discover all children of this device. */
 	virtual void discover_children() = 0;

@@ -29,14 +29,13 @@ public:
 		device_storage_t(),
 		device_pci_t(DEVICE_TYPE_STORAGE | DEVICE_TYPE_PCI | DEVICE_TYPE_NVME, bus, device, function) {}
 
-	int initialize() override { return SUCCESS; };
-	int uninitialize() override { return SUCCESS; };
-
-	bool is_device(const device_t* device) const override { return device_pci_t::is_device(device); };
+	int initialize() override;
+	int uninitialize() override;
 
 	void discover_children() override {};
-
+	
 protected:
-	int read_sectors(uint64_t lba, size_t count, void* buffer) const override { return SUCCESS; };
-	int write_sectors(uint64_t lba, size_t count, const void* buffer) const override{ return SUCCESS; };
+	bool is_device(const device_t* device) const override;
+	int read_sectors(uint64_t lba, size_t count, void* buffer) const override;
+	int write_sectors(uint64_t lba, size_t count, const void* buffer) const override;
 };
