@@ -42,7 +42,8 @@ bool device_pci_t::is_device(const device_t* dev) const
 	if((dev->m_type & DEVICE_TYPE_PCI) == 0)
 		return false;
 	
-	const device_pci_t* pci_device = (const device_pci_t*)dev;
+	const device_pci_t* pci_device = (const device_pci_t*)(dev->m_self);
+
 	if(pci_device->m_class_code != m_class_code)
 		return false;
 

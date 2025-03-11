@@ -29,13 +29,14 @@ typedef uint64_t device_type_t;
 #define DEVICE_TYPE_PCI				((device_type_t)1 << 1)
 #define DEVICE_TYPE_PCI_BRIDGE		(((device_type_t)1 << 2) | DEVICE_TYPE_PCI)
 #define DEVICE_TYPE_STORAGE			((device_type_t)1 << 3)
+#define DEVICE_TYPE_NVME			((device_type_t)1 << 4)
 
 class device_t
 {
 public:
 	/* Only initializes device identifiers. This function does not initialize the device nor adds it to the device tree. */
-	inline device_t(device_type_t type) 
-		: m_type(type), m_parent(NULL), m_children(NULL), m_next(NULL), m_prev(NULL) {}
+	inline device_t(device_type_t type, void* self)
+		: m_type(type), m_self(self), m_parent(NULL), m_children(NULL), m_next(NULL), m_prev(NULL) {}
 
 	/*
 	 * This function acts as the destructor of the device.
@@ -72,13 +73,24 @@ public:
 	void remove_child(device_t* dev);
 
 	const device_type_t m_type;
+	
+	/* 
+	 * Points to the most derived class of this object. 
+	 * This is an operating system, i dont have RTTI, so when downcasting i cant use dynamic_cast. 
+	 * A pointer to a derived class isnt necessary the same pointer to the base class, so i cant just convert pointers.
+	 * When up casting however, i can just cast the pointers, because apparently they are the same.
+	 * So, i keep i pointer to the most derived class, so i can cast to whatever upcasted class exists 
+	 * (from <m_self> perspective). For example, if a have device_t* dev, which i down cast to device_pci_t*, 
+	 * i would do: device_pci_t* casted = (device_pci_t*)dev->m_self;
+	 */
+	void* m_self;
 
-protected:
 	/* 
 	 * Check if this device is the same as <dev>, from the most general identifiers to the most specific.
 	 * For example if <dev> is a PCI device, then if its class ID doesnt exist, this function would check vendor ID and device ID.
 	 */
 	virtual bool is_device(const device_t* dev) const = 0;
+protected:
 	
 	/* Discover all children of this device. */
 	virtual void discover_children() = 0;
@@ -93,7 +105,7 @@ protected:
 class device_computer_t : public device_t
 {
 public:
-	device_computer_t() : device_t(DEVICE_TYPE_COMPUTER) {};
+	device_computer_t() : device_t(DEVICE_TYPE_COMPUTER, this) {};
 
 	int initialize() 	override { return SUCCESS; };
 	int uninitialize() 	override { return SUCCESS; };

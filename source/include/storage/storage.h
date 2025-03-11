@@ -24,11 +24,11 @@
 #include "device/device.h"
 #include "pci/pci.h"
 
-class device_storage_t : public device_t
+class device_storage_t : public virtual device_t
 {
 public:
 	device_storage_t()
-		: device_t(DEVICE_TYPE_STORAGE) {}
+		: device_t(DEVICE_TYPE_STORAGE, this) {}
 
 	virtual bool is_device(const device_t* device) const override;
 
