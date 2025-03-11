@@ -141,6 +141,43 @@ int apic_ioapic_init(acpi_madt_record_ioapic_t* ioapic_record)
 	return SUCCESS;
 }
 
+int apic_ioapic_map_irq(const apic_ioapic_descriptor_t* ioapic, uint8_t irq, uint8_t interrupt)
+{
+	if(!ioapic)
+		return ERR_INVALID_PARAMETER;
+
+	/* Check if the given IRQ is mapped in this IO APIC */
+	uint32_t max_redtbl = APIC_IOAPIC_IOAPICVER_MAX_REDTBL(apic_ioapic_read32(ioapic, APIC_IOAPIC_REG_IOAPICVER));
+	if(irq < ioapic->first_gsi || irq > APIC_IOAPIC_REDTBL_TO_IRQ(max_redtbl))
+		return ERR_INVALID_PARAMETER;
+
+	/* 
+	 * TODO: When making multiprocessing and all of that, 
+	 * find the core with least interrupts and map the interrupt to it. 
+	 */
+	uint32_t ebx, unused;
+	cpuid(CPUID_CODE_GET_FEATURES, &unused, &ebx, &unused, &unused);
+	uint8_t local_apic_id = CPUID_FEATURE_EBX_INIT_APIC_ID(ebx);
+
+	uint32_t irq_redtbl_reg = APIC_IOAPIC_REG_IOREDTBL(irq);
+	apic_ioapic_redtbl_entry_t entry = {
+		.interrupt 			= interrupt,
+		.delivery_mode 		= APIC_IOAPIC_REDTBL_DELIVERY_MODE_FIXED,
+		.destination_mode 	= APIC_IOAPIC_REDTBL_DESTINATION_MODE_PHYSICAL,
+		.delivery_status 	= 0,
+		.pin_polarity		= APIC_IOAPIC_REDTBL_PIN_POLARITY_ACTIVE_HIGH,
+		.remote_irr			= 0,
+		.trigger_mode		= APIC_IOAPIC_REDTBL_TRIGGER_MODE_EDGE,
+		.mask				= 0,
+		.reserved			= 0,
+		.destination		= local_apic_id
+	};
+
+	apic_ioapic_write64(ioapic, irq_redtbl_reg, *(uint64_t*)&entry);		/* Cant cast directly to uint64_t, so do that. */
+
+	return SUCCESS;
+}
+
 uint32_t apic_ioapic_read32(const apic_ioapic_descriptor_t* ioapic, uint8_t reg)
 {
 	uint32_t relative_reg = reg;
