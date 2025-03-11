@@ -39,6 +39,25 @@
 #define APIC_IOAPIC_REG_IRQ_0				0x10
 #define APIC_IOAPIC_REG_IOREDTBL(irq)		(APIC_IOAPIC_REG_IRQ_0 + 2 * (irq)) /* IOAPIC redirection entry register for a IRQ <irq> */
 
+#define APIC_IOAPIC_IOAPICVER_MAX_REDTBL(reg)	(((reg) >> 16) & 0xFF)			/* The highest redtbl index (register) */
+#define APIC_IOAPIC_REDTBL_TO_IRQ(redtbl_idx)	(((redtbl_idx) - 0x10) / 2)		/* redtbl index (register) to IRQ number */
+
+#define APIC_IOAPIC_REDTBL_DELIVERY_MODE_FIXED			0
+#define APIC_IOAPIC_REDTBL_DELIVERY_MODE_LOW_PRIORITY	1
+#define APIC_IOAPIC_REDTBL_DELIVERY_MODE_SYSTEM_MNG_INT 2
+#define APIC_IOAPIC_REDTBL_DELIVERY_MODE_NMI			4
+#define APIC_IOAPIC_REDTBL_DELIVERY_MODE_INIT			5
+#define APIC_IOAPIC_REDTBL_DELIVERY_MODE_EXTERNAL		7
+
+#define APIC_IOAPIC_REDTBL_DESTINATION_MODE_PHYSICAL	0
+#define APIC_IOAPIC_REDTBL_DESTINATION_MODE_LOGICAL		1
+
+#define APIC_IOAPIC_REDTBL_PIN_POLARITY_ACTIVE_HIGH 	0
+#define APIC_IOAPIC_REDTBL_PIN_POLARITY_ACTIVE_LOW 		1
+
+#define APIC_IOAPIC_REDTBL_TRIGGER_MODE_EDGE			0
+#define APIC_IOAPIC_REDTBL_TRIGGER_MODE_LEVEL			1
+
 #define APIC_LAPIC_REG_SPURIOUS_INTERRUPT_VECTOR	0xF0
 
 typedef struct apic_ioapic_descriptor
@@ -48,11 +67,28 @@ typedef struct apic_ioapic_descriptor
 	struct apic_ioapic_descriptor* next;
 } apic_ioapic_descriptor_t;
 
+typedef struct apic_ioapic_redtbl_entry
+{
+	uint64_t interrupt 			: 8;
+	uint64_t delivery_mode 		: 3;
+	uint64_t destination_mode	: 1;
+	uint64_t delivery_status	: 1;
+	uint64_t pin_polarity		: 1;
+	uint64_t remote_irr			: 1;
+	uint64_t trigger_mode 		: 1;
+	uint64_t mask 				: 1;
+	uint64_t reserved 			: 39;
+	uint64_t destination		: 8;
+} __attribute__((packed)) apic_ioapic_redtbl_entry_t;
+
 /* 
  * Initialize all local and IO APIC's on the system. 
  * Returns 0 on success, an error code otherwise.
  */
 int apic_init();
+
+/* Disable the 8259 PIC. Needed as we are using the APIC. */
+void pic8259_disable();
 
 /* 
  * Initialize a found IO APIC. Sets IRQ's, things like that
@@ -60,8 +96,11 @@ int apic_init();
  */
 int apic_ioapic_init(acpi_madt_record_ioapic_t* ioapic_record);
 
-/* Disable the 8259 PIC. Needed as we are using the APIC. */
-void pic8259_disable();
+/* 
+ * Map <irq> of <ioapic> to interrupt vector <interrupt>. 
+ * Returns 0 on success, an error code otherwise.
+ */
+int apic_ioapic_map_irq(const apic_ioapic_descriptor_t* ioapic, uint8_t irq, uint8_t interrupt);
 
 /* Read a 32 bit register from an IO APIC's configuration space. */
 uint32_t apic_ioapic_read32(const apic_ioapic_descriptor_t* ioapic, uint8_t reg);

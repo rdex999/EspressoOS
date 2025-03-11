@@ -211,8 +211,9 @@ int apic_lapic_init()
 		}
 	}
 
+	/* Spurious interrupt = 0xFF, set enable local apic bit (0x100) */
 	uint32_t old_spurious = apic_lapic_read_reg(APIC_LAPIC_REG_SPURIOUS_INTERRUPT_VECTOR);
-	apic_lapic_write_reg(APIC_LAPIC_REG_SPURIOUS_INTERRUPT_VECTOR, old_spurious | 0xFF | 0x100);
+	apic_lapic_write_reg(APIC_LAPIC_REG_SPURIOUS_INTERRUPT_VECTOR, old_spurious | 0xFF | 0x100);	
 
 	return SUCCESS;
 }
