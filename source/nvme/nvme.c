@@ -29,11 +29,6 @@ int device_storage_pci_nvme_t::uninitialize()
 	return SUCCESS;
 }
 
-bool device_storage_pci_nvme_t::is_device(const device_t* device) const
-{
-	return false;
-}
-
 int device_storage_pci_nvme_t::read_sectors(uint64_t lba, size_t count, void* buffer) const
 {
 	return SUCCESS;

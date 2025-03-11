@@ -30,7 +30,7 @@ public:
 	virtual int initialize() override;
 
 protected:
-	virtual bool is_device(const device_t* dev) const override;
+	virtual bool is_device(const device_t* device) const override;
 
 	const uint8_t m_bus;
 	const uint8_t m_device;
@@ -40,6 +40,7 @@ protected:
 	uint16_t m_device_id;
 	uint8_t m_class_code;
 	uint8_t m_subclass;
+	uint8_t m_prog_if;
 };
 
 class device_pci_bridge_pci2pci_t : public device_pci_t

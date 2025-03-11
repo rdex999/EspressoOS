@@ -64,13 +64,13 @@ public:
 	 * Check if this device matches <dev>, if not check this for all children. (recursive). 
 	 * Returns a pointer to the first matching device, NULL on failure.
 	 */
-	device_t* find(const device_t* dev) const;
+	device_t* find(const device_t* device) const;
 
 	/* Add a child to the child devices linked list. (Appends to the beginning of the list)*/
-	void add_child(device_t* dev);
+	void add_child(device_t* device);
 	
 	/* Remove a child from the child devices linked list. */
-	void remove_child(device_t* dev);
+	void remove_child(device_t* device);
 
 	const device_type_t m_type;
 	
@@ -90,7 +90,7 @@ protected:
 	 * Check if this device is the same as <dev>, from the most general identifiers to the most specific.
 	 * For example if <dev> is a PCI device, then if its class ID doesnt exist, this function would check vendor ID and device ID.
 	 */
-	virtual bool is_device(const device_t* dev) const = 0;
+	virtual bool is_device(const device_t* device) const = 0;
 	
 	/* Discover all children of this device. */
 	virtual void discover_children() = 0;
@@ -116,8 +116,8 @@ public:
 	 * For example, a PCI device would add itself to the children of the root device.
 	 * This is done so devices can add themselves whenever their ready, and not only when the root device is initialized.
 	 */
-	inline void add_child(device_t* dev) 		{ device_t::add_child(dev); }
-	inline void remove_child(device_t* dev) 	{ device_t::remove_child(dev); }
+	inline void add_child(device_t* device) 		{ device_t::add_child(device); }
+	inline void remove_child(device_t* device) 		{ device_t::remove_child(device); }
 
 protected:
 	bool is_device(const device_t*) const override { return false; };
