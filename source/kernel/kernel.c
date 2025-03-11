@@ -24,6 +24,7 @@
 #include "pci/pci.h"
 #include "idt/idt.h"
 #include "apic/apic.h"
+#include "nvme/nvme.h"
 
 #define VIDEO ((uint32_t*)0xA0000)
 
@@ -38,6 +39,7 @@ void kernel_main(multiboot_info_t* mbd)
 
 	pmm_init(mmap);
 	vmm_init();
+	device_root_init();
 	acpi_init(mbd);
 	idt_init();
 	apic_init();

@@ -125,3 +125,5 @@ protected:
 };
 
 extern device_computer_t g_device_root;
+
+inline void device_root_init() { new(&g_device_root) device_computer_t(); }

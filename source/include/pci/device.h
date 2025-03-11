@@ -32,6 +32,14 @@ public:
 protected:
 	virtual bool is_device(const device_t* device) const override;
 
+	/* 
+	 * Map a 64 bit Base Address Register (bar). 
+	 * Uses bar <bar> as the low 32 bits, and bar <bar>+1 as the high 32 bits of the physical address. 
+	 * <bar> is the number of the bar (bar 0, bar 1, ...)
+	 * Returns a valid pointer on success, NULL on failure.
+	 */
+	void* map_bar64(uint8_t bar);
+
 	const uint8_t m_bus;
 	const uint8_t m_device;
 	const uint8_t m_function;

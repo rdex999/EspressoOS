@@ -15,9 +15,11 @@
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include "pci/pci.h"
+
 #include <stdint.h>
 #include <stddef.h>
-#include "pci/pci.h"
+#include "mm/vmm/vmm.h"
 
 int device_pci_t::initialize()
 {
@@ -75,6 +77,30 @@ bool device_pci_t::is_device(const device_t* device) const
 
 	/* User made a specific search on all identifiers. */
 	return pci_device->m_device_id == m_device_id;
+}
+
+void* device_pci_t::map_bar64(uint8_t bar)
+{
+	uint32_t bar_low32 = pci_read32(
+		m_bus, 
+		m_device, 
+		m_function, 
+		offsetof(pci_config_t, device.base_address[0]) + bar * sizeof(uint32_t)
+	);
+
+	uint32_t bar_high32 = pci_read32(
+		m_bus, 
+		m_device, 
+		m_function, 
+		offsetof(pci_config_t, device.base_address[0]) + (bar + 1) * sizeof(uint32_t)
+	);
+
+	phys_addr_t physical = ((uint64_t)bar_low32 & 0xFFFFFFF0) | ((uint64_t)bar_high32 << 32);
+
+	return (void*)vmm_map_physical_page(
+		physical, 
+		VMM_PAGE_P | VMM_PAGE_RW | VMM_PAGE_PCD | VMM_PAGE_PTE_PAT
+	);
 }
 
 int device_pci_bridge_pci2pci_t::initialize()

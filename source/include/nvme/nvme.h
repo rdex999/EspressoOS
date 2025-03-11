@@ -21,6 +21,14 @@
 #include "storage/storage.h"
 #include "pci/pci.h"
 
+/* The version number from the mmio configuration space, the VS register. */
+typedef struct nvme_version
+{
+	uint32_t tertiary 	: 8;
+	uint32_t minor 		: 8;
+	uint32_t major		: 16;
+} __attribute__((packed)) nvme_version_t;
+
 class device_storage_pci_nvme_t : public device_storage_t, public device_pci_t
 {
 public:	
@@ -38,4 +46,8 @@ protected:
 
 	int read_sectors(uint64_t lba, size_t count, void* buffer) const override;
 	int write_sectors(uint64_t lba, size_t count, const void* buffer) const override;
+
+private:
+	/* The memory mapped registers used by the NVME controller. */
+	void* m_mmio;
 };

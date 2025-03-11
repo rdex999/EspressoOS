@@ -21,7 +21,16 @@
 
 int device_storage_pci_nvme_t::initialize()
 {
-	return device_pci_t::initialize();
+	int status;
+	status = device_pci_t::initialize();
+	if(status != SUCCESS)
+		return status;
+	
+	m_mmio = device_pci_t::map_bar64(0);
+	if(m_mmio == (void*)-1)
+		return ERR_OUT_OF_MEMORY;
+
+	return SUCCESS;
 }
 
 int device_storage_pci_nvme_t::uninitialize()
