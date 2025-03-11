@@ -27,6 +27,8 @@ int vmm_init()
 {
 	new(&g_vmm_alloc_map) bitmap_t(VMM_ALLOC_MAP, VMM_ALLOC_MAP_SIZE);
 
+	memset(VMM_REVERSE_MAP, 0xFF, VMM_REVERSE_MAP_SIZE);
+
 	/* Allocate the physical memory of the kernel, including the reverse mapping. +1 for page map level 4. */
 	phys_addr_t identity_map_end = ALIGN_UP((size_t)VMM_ALLOC_MAP_END, VMM_PAGE_SIZE);
 

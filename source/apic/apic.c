@@ -197,13 +197,18 @@ int apic_lapic_init()
 	{
 		/* Only bits 12-63 are used for the physical address of the mmio. */
 		phys_addr_t phys = cpu_read_msr(MSR_IA32_APIC_BASE) & ~(phys_addr_t)(4096 - 1); 
-		s_lapic_address_override = vmm_map_physical_page(
-			phys,
-			VMM_PAGE_P | VMM_PAGE_RW | VMM_PAGE_PCD | VMM_PAGE_PTE_PAT
-		);
 
-		if(s_lapic_address_override == (virt_addr_t)-1)
-			return ERR_OUT_OF_MEMORY;
+		/* The same physical address might be used on multiple CPU's, so only if it is not mapped, map it. */
+		if(vmm_get_virtual_of(phys) == (virt_addr_t)-1)
+		{
+			virt_addr_t virt = vmm_map_physical_page(
+				phys,
+				VMM_PAGE_P | VMM_PAGE_RW | VMM_PAGE_PCD | VMM_PAGE_PTE_PAT
+			);
+	
+			if(virt == (virt_addr_t)-1)
+				return ERR_OUT_OF_MEMORY;
+		}
 	}
 
 	uint32_t old_spurious = apic_lapic_read_reg(APIC_LAPIC_REG_SPURIOUS_INTERRUPT_VECTOR);
