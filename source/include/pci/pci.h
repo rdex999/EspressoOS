@@ -19,12 +19,6 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include <stdlib.h>
-#include "error.h"
-#include "mm/pmm/pmm.h"
-#include "mm/vmm/vmm.h"
-#include "acpi/acpi.h"
-#include "cpu.h"
 #include "pci/device.h"
 
 #define PCI_DEVICES_PER_BUS 		32
@@ -37,6 +31,12 @@
 
 #define PCI_MECHANISM1_ADDRESS(bus, device, function, offset) \
 	(((uint32_t)(bus) << 16) | ((uint32_t)(device) << 11) | ((uint32_t)(function) << 8) | ((uint32_t)(offset) & 0xFC) | (1 << 31))
+
+#define PCI_CLASSCODE_MASS_STORAGE 	1
+
+#define PCI_SUBCLASS_NVM			8
+
+#define PCI_PROGIF_NVME				2
 
 typedef enum pci_access_mechanism
 {

@@ -18,6 +18,14 @@
 #include "pci/pci.h"
 #include "pci/device.h"
 
+#include <stdlib.h>
+#include "error.h"
+#include "mm/pmm/pmm.h"
+#include "mm/vmm/vmm.h"
+#include "acpi/acpi.h"
+#include "cpu.h"
+#include "nvme/nvme.h"
+
 static pci_access_mechanism_t s_pci_access_mechanism = (pci_access_mechanism_t)-1;
 static uint8_t* s_pci_mmconfig = NULL;
 
@@ -84,11 +92,31 @@ device_pci_t* pci_create_device(uint8_t bus, uint8_t device, uint8_t function)
 	uint8_t header_type = pci_read8(bus, device, function, offsetof(pci_config_t, header_type));
 	uint8_t class_code = pci_read8(bus, device, function, offsetof(pci_config_t, class_code));
 	uint8_t subclass = pci_read8(bus, device, function, offsetof(pci_config_t, subclass));
+	// uint8_t prog_if = pci_read8(bus, device, function, offsetof(pci_config_t, prog_if));
 
 	if((header_type & 1) == 1 || (class_code == 6 && subclass == 4 ))
 		return new device_pci_bridge_pci2pci_t(bus, device, function);
+
+	switch(class_code)
+	{
+	case PCI_CLASSCODE_MASS_STORAGE:
+	{
+		switch(subclass)
+		{
+		case PCI_SUBCLASS_NVM:
+			return new device_storage_pci_nvme_t(bus, device, function);
+
+		default:
+			break;
+		}
+
+		break;
+	}
 	
-	/* TODO: Handle regular devices */
+	default:
+		break;
+	}
+
 	return NULL; 
 }
 

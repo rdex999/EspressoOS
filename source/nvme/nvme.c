@@ -21,7 +21,7 @@
 
 int device_storage_pci_nvme_t::initialize()
 {
-	return SUCCESS;
+	return device_pci_t::initialize();
 }
 
 int device_storage_pci_nvme_t::uninitialize()

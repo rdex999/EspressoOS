@@ -140,7 +140,7 @@ clean:
 	@rm -rf $(BLD) dist iso_disk
 
 runimage: image
-	$(QEMU) $(QEMU_FLAGS) -drive file=$(DISK_IMG)
+	$(QEMU) $(QEMU_FLAGS) -drive file=$(DISK_IMG),if=none,id=nvm -device nvme,serial=none,drive=nvm
 
 runiso: iso
 	$(QEMU) $(QEMU_FLAGS) -cdrom $(ISO)
@@ -148,7 +148,7 @@ runiso: iso
 debugimage:
 	$(MAKE) clean
 	$(MAKE) image CFLAGS+=-g ASFLAGS+=-g
-	$(QEMU) $(QEMU_FLAGS) -drive file=$(DISK_IMG) -S -s &
+	$(QEMU) $(QEMU_FLAGS) -drive file=$(DISK_IMG),if=none,id=nvm -device nvme,serial=none,drive=nvm -S -s &
 	gdb $(BLD)/kernel.bin 								\
         -ex "target remote localhost:1234" 				\
         -ex "set disassembly-flavor intel" 				\
