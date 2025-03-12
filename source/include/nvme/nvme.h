@@ -21,13 +21,40 @@
 #include "storage/storage.h"
 #include "pci/pci.h"
 
+typedef struct nvme_reg_capabilities				/* CAP */
+{
+	uint64_t max_queue_entry_count 			: 16;	/* MQES - Maximum amount of queue entries, minus 1. */
+	uint64_t contiguous_queue 				: 1;	/* CQR - 1 if is it required that the physical queue memory is contiguous. */
+	uint64_t ams_weighted_round_robin		: 1;	/* AMS */
+	uint64_t ams_vendor_specific			: 1;	/* AMS */
+	uint64_t reserved0 						: 5;	
+	uint64_t timeout 						: 8;	/* TO - In 500 milliseconds units. */
+	uint64_t stride							: 4;	/* DSTRD - The stride is calculated as: 2**(2 + stride) where "stride" is this field */
+	uint64_t subsystem_reset				: 1;	/* NSSRS - 1 if the subsystem reset feature is available, 0 otherwise. */
+	uint64_t css_nvm						: 1;	/* "css" stands for Command Set Support. If this field is 1, the NVM command set is supported. */
+	uint64_t css_reserved0 					: 1;	/* For any "css" field, if it is 1, the command set it specifies is supported. */
+	uint64_t css_reserved1 					: 1;	/* ^ */
+	uint64_t css_reserved2 					: 1;	/* | */
+	uint64_t css_reserved3 					: 1;	/* | */
+	uint64_t css_reserved4 					: 1;	/* | */
+	uint64_t css_reserved5 					: 1;	/* | */
+	uint64_t css_admin_only 				: 1;	/* If set (1), only the admin command set is available. */
+	uint64_t boot_partition_support			: 1;	/* BPS - Set (1) if the controller supports boot partitions. */
+	uint64_t reserved1 						: 2;
+	uint64_t min_page_size 					: 4;	/* MPSMIN - Minimum supported page size. page size = (2 ^ (12 + MPSMIN)) */
+	uint64_t max_page_size					: 4;	/* MPSMAX - Maximum supported page size. page size = (2 ^ (12 + MPSMAN)) */
+	uint64_t persistent_mm_region			: 1;	/* PMRS - Set if persistent memory region is supported. */
+	uint64_t controller_memory_buffer		: 1;	/* CMBS - Set if the controller supports the Controller Memory Buffer. */
+	uint64_t reserved2 						: 6;
+} nvme_mmio_capabilities_t;
+
 /* The version number from the mmio configuration space, the VS register. */
-typedef struct nvme_version
+typedef struct nvme_reg_version					/* VS */
 {
 	uint32_t tertiary 	: 8;
 	uint32_t minor 		: 8;
 	uint32_t major		: 16;
-} __attribute__((packed)) nvme_version_t;
+} __attribute__((packed)) nvme_reg_version_t;
 
 class device_storage_pci_nvme_t : public device_storage_t, public device_pci_t
 {
