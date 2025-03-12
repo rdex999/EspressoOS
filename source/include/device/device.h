@@ -83,7 +83,7 @@ public:
 	 * (from <m_self> perspective). For example, if a have device_t* dev, which i down cast to device_pci_t*, 
 	 * i would do: device_pci_t* casted = (device_pci_t*)dev->m_self;
 	 */
-	void* m_self;
+	void const* m_self;
 
 protected:
 	/* 

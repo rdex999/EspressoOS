@@ -26,7 +26,7 @@ int device_storage_pci_nvme_t::initialize()
 	if(status != SUCCESS)
 		return status;
 	
-	m_mmio = device_pci_t::map_bar64(0);
+	m_mmio = (nvme_registers_t*)device_pci_t::map_bar64(0);
 	if(m_mmio == (void*)-1)
 		return ERR_OUT_OF_MEMORY;
 
