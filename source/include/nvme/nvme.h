@@ -27,6 +27,26 @@
  * Starting from page 42, there is an explanation about all MMIO registers.
  */
 
+/* 
+ * Doorbell registers are 32 bits, but they might have paddings, so the size of a doorbell register 
+ * is always specified in the stride register (DSTRD). 
+ * See the comment in the capabilities register (CAP) about calculating the stride size.
+ * So, The doorbell register for submission queue 0 is right at offset 0x1000, and the doorbell register for 
+ * completion queue 0 would be at the end of the submission queue doorbell register, which is, 0x1000 + stride.
+ * And the next submission queue doorbell register is after the completion queue doorbell register of the previous queue, and so on.
+ * sbms_0_doorbell, cmpl_0_doorbell, sbms_1_doorbell, cmpl_1_doorbell, ..., sbms_n_doorbell, cmpl_n_doorbell, sbms_n+1_doorbell, cmpl_n+1_doorbell.
+ */
+
+#define NVME_REG_SBMS_QUEUE_DOORBELL(registers, queue_index) (										\
+	(registers)->reserved2 + sizeof((registers->reserved2)) +										\
+	(uint64_t)2 * (queue_index) * ((uint64_t)1 << (registers->capabilities.stride + (uint64_t)2))	\
+)
+
+#define NVME_REG_CMPL_QUEUE_DOORBELL(registers, queue_index) (														\
+	(registers)->reserved2 + sizeof((registers->reserved2)) +														\
+	((uint64_t)2 * (queue_index) + (uint64_t)1) * ((uint64_t)1 << (registers->capabilities.stride + (uint64_t)2))	\
+)
+
 typedef struct nvme_reg_capabilities				/* CAP */
 {
 	uint64_t max_queue_entry_count 			: 16;	/* MQES - Maximum amount of queue entries, minus 1. */

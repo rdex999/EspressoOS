@@ -79,7 +79,7 @@ bool device_pci_t::is_device(const device_t* device) const
 	return pci_device->m_device_id == m_device_id;
 }
 
-void* device_pci_t::map_bar64(uint8_t bar)
+void* device_pci_t::map_bar64(uint8_t bar, uint64_t flags, size_t pages)
 {
 	uint32_t bar_low32 = pci_read32(
 		m_bus, 
@@ -97,10 +97,7 @@ void* device_pci_t::map_bar64(uint8_t bar)
 
 	phys_addr_t physical = ((uint64_t)bar_low32 & 0xFFFFFFF0) | ((uint64_t)bar_high32 << 32);
 
-	return (void*)vmm_map_physical_page(
-		physical, 
-		VMM_PAGE_P | VMM_PAGE_RW | VMM_PAGE_PCD | VMM_PAGE_PTE_PAT
-	);
+	return (void*)vmm_map_physical_pages(physical, flags, pages);
 }
 
 int device_pci_bridge_pci2pci_t::initialize()
