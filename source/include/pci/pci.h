@@ -108,6 +108,38 @@ typedef struct pci_config
 	
 } __attribute__((packed)) pci_config_t;
 
+typedef struct pci_capability_header
+{
+	uint8_t id;
+	uint8_t next;
+} __attribute__((packed)) pci_capability_header_t;
+
+typedef struct pci_capability_msi
+{
+	pci_capability_header_t header;
+	uint16_t message_control;
+	uint64_t message_address;
+	uint16_t message_data;
+	uint16_t reserved;
+	uint32_t mask;
+	uint32_t pending;
+} __attribute__((packed)) pci_capability_msi_t;
+
+/* In the MSI-X capapility register, there are two fields (message table and pending bit) that use the same structure. */
+typedef struct pci_capability_msix_bar_addr
+{
+	uint32_t bar_index		: 3;		/* BIR */
+	uint32_t offset			: 29;
+} __attribute__((packed)) pci_capability_msix_bar_addr_t;
+
+typedef struct pci_capability_msix
+{
+	pci_capability_header_t header;
+	uint16_t message_control;
+	pci_capability_msix_bar_addr_t table;
+	pci_capability_msix_bar_addr_t pending;
+} __attribute__((packed)) pci_capability_msix_t;
+
 /* Initialize PCI, detect available access mechanisms. Returns 0 on success, an error code otherwise. */
 int pci_init();
 

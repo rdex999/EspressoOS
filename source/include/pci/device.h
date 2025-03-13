@@ -21,6 +21,12 @@
 #include <stddef.h>
 #include "device/device.h"
 
+typedef enum pci_capability_id
+{
+	PCI_CAPABILITY_ID_MSI 	= 0x05,
+	PCI_CAPABILITY_ID_MSIX	= 0x11,
+} pci_capability_id_t;
+
 class device_pci_t : public virtual device_t
 {
 public:
@@ -39,6 +45,13 @@ protected:
 	 * Returns a valid pointer on success, NULL on failure.
 	 */
 	void* map_bar64(uint8_t bar, uint64_t flags, size_t pages);
+
+	/* 
+	 * Find a capability of <capability> ID in the device's capabilities linked list.
+	 * Returns an offset into the device's configuration space which has the capability.
+	 * Returns -1 on failure. (Either the device doesnt support capabilities, or the given capability is not found.)
+	 */
+	uint16_t find_capability(pci_capability_id_t capability) const;
 
 	const uint8_t m_bus;
 	const uint8_t m_device;

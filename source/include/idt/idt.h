@@ -78,4 +78,4 @@ void idt_set_trap_gate(uint8_t index, uint64_t isr_address);
  * and initializes it to point to <isr_address>.
  * Returns -1 on failure. 
  */
-uint16_t idt_alloc_interrupt_vector(uint64_t isr_address);
+uint16_t idt_alloc_interrupt_gate(uint64_t isr_address);
