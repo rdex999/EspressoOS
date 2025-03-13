@@ -43,12 +43,12 @@ int device_storage_pci_nvme_t::uninitialize()
 	return SUCCESS;
 }
 
-int device_storage_pci_nvme_t::read_sectors(uint64_t lba, size_t count, void* buffer) const
+int device_storage_pci_nvme_t::read_sectors(uint64_t, size_t, void*) const
 {
 	return SUCCESS;
 }
 
-int device_storage_pci_nvme_t::write_sectors(uint64_t lba, size_t count, const void* buffer) const
+int device_storage_pci_nvme_t::write_sectors(uint64_t, size_t, const void*) const
 {
 	return SUCCESS;
 }

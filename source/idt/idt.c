@@ -69,6 +69,20 @@ void idt_set_trap_gate(uint8_t index, uint64_t isr_address)
 	idt_set_gate(index, &gate);
 }
 
+uint16_t idt_alloc_interrupt_gate(uint64_t isr_address)
+{
+	for(unsigned int i = IDT_LAST_EXCEPTION_VECTOR + 1; i < ARR_LEN(s_idt_table); ++i)
+	{
+		if((s_idt_table[i].attributes & IDT_ATTR_PRESENT) == 0)
+		{
+			idt_set_interrupt_gate(i, isr_address);
+			return i;
+		}
+	}
+
+	return -1;
+}
+
 extern "C" void interrupt_page_fault()
 {
 	while(true)

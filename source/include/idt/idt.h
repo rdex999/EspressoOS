@@ -20,6 +20,8 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#define IDT_LAST_EXCEPTION_VECTOR 		0x1F
+
 #define IDT_GATE_GET_ADDRESS(gate) ((gate)->address0 | ((gate)->address16 << 16) | ((gate)->address32 << 32))
 #define IDT_GATE_SET_ADDRESS(gate, address) { 				\
 	(gate)->address0 	= (address) & 0xFFFF;				\
@@ -70,3 +72,10 @@ void idt_set_interrupt_gate(uint8_t index, uint64_t isr_address);
 
 /* Make gate <index> a trap gate (exceptions) which points to <isr_address>. */
 void idt_set_trap_gate(uint8_t index, uint64_t isr_address);
+
+/* 
+ * Returns a free interrupt gate index (vector) in the lower 8 bits (high 8 bits are clear) 
+ * and initializes it to point to <isr_address>.
+ * Returns -1 on failure. 
+ */
+uint16_t idt_alloc_interrupt_vector(uint64_t isr_address);
