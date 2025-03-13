@@ -81,21 +81,12 @@ bool device_pci_t::is_device(const device_t* device) const
 
 void* device_pci_t::map_bar64(uint8_t bar, uint64_t flags, size_t pages)
 {
-	uint32_t bar_low32 = pci_read32(
+	phys_addr_t physical = ~(uint64_t)0xF & pci_read64(
 		m_bus, 
 		m_device, 
-		m_function, 
+		m_function,
 		offsetof(pci_config_t, device.base_address[0]) + bar * sizeof(uint32_t)
 	);
-
-	uint32_t bar_high32 = pci_read32(
-		m_bus, 
-		m_device, 
-		m_function, 
-		offsetof(pci_config_t, device.base_address[0]) + (bar + 1) * sizeof(uint32_t)
-	);
-
-	phys_addr_t physical = ((uint64_t)bar_low32 & 0xFFFFFFF0) | ((uint64_t)bar_high32 << 32);
 
 	return (void*)vmm_map_physical_pages(physical, flags, pages);
 }

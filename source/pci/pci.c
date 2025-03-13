@@ -120,6 +120,13 @@ device_pci_t* pci_create_device(uint8_t bus, uint8_t device, uint8_t function)
 	return NULL; 
 }
 
+uint64_t pci_read64(uint8_t bus, uint8_t device, uint8_t function, uint16_t offset)
+{
+	uint32_t low = pci_read32(bus, device, function, offset);
+	uint32_t high = pci_read32(bus, device, function, offset + sizeof(uint32_t));
+	return (uint64_t)low | ((uint64_t)high << 32);
+}
+
 uint32_t pci_read32(uint8_t bus, uint8_t device, uint8_t function, uint16_t offset)
 {
 	if(s_pci_access_mechanism == PCI_ACCESS_MMCONFIG)
@@ -170,6 +177,12 @@ uint8_t pci_read8(uint8_t bus, uint8_t device, uint8_t function, uint16_t offset
 	}
 	
 	return -1;
+}
+
+void pci_write64(uint8_t bus, uint8_t device, uint8_t function, uint16_t offset, uint64_t value)
+{
+	pci_write32(bus, device, function, offset, (uint32_t)value);
+	pci_write32(bus, device, function, offset + sizeof(uint32_t), (uint32_t)(value >> 32));
 }
 
 void pci_write32(uint8_t bus, uint8_t device, uint8_t function, uint16_t offset, uint32_t value)

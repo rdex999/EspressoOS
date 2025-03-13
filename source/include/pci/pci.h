@@ -155,6 +155,9 @@ void pci_enumerate_bus(uint8_t bus, device_t* parent);
  */
 device_pci_t* pci_create_device(uint8_t bus, uint8_t device, uint8_t function);
 
+/* Read an 8 byte value from a devices memory (two 32bit reads)*/
+uint64_t pci_read64(uint8_t bus, uint8_t device, uint8_t function, uint16_t offset);
+
 /* Read a 4 byte value from a devices memory */
 uint32_t pci_read32(uint8_t bus, uint8_t device, uint8_t function, uint16_t offset);
 
@@ -163,6 +166,9 @@ uint16_t pci_read16(uint8_t bus, uint8_t device, uint8_t function, uint16_t offs
 
 /* Read a byte from a devices memory */
 uint8_t pci_read8(uint8_t bus, uint8_t device, uint8_t function, uint16_t offset);
+
+/* Write a 8 byte value to a devices memory. (two 32bit writes) */
+void pci_write64(uint8_t bus, uint8_t device, uint8_t function, uint16_t offset, uint64_t value);
 
 /* Write a 4 byte value to a devices memory */
 void pci_write32(uint8_t bus, uint8_t device, uint8_t function, uint16_t offset, uint32_t value);
