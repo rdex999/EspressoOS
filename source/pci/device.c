@@ -100,6 +100,25 @@ void* device_pci_t::map_bar64(uint8_t bar, uint64_t flags, size_t pages)
 	return (void*)vmm_map_physical_pages(physical, flags, pages);
 }
 
+uint16_t device_pci_t::find_capability(pci_capability_id_t capability) const
+{
+	int reg_status = pci_read16(m_bus, m_device, m_function, offsetof(pci_config_t, status));
+	if((reg_status & PCI_STATUS_CAPABILITIES) == 0)
+		return -1;
+	
+	uint8_t current = pci_read8(m_bus, m_device, m_function, offsetof(pci_config_t, device.capabilities_pointer));
+	while(current)
+	{
+		uint8_t id = pci_read8(m_bus, m_device, m_function, (uint16_t)current + offsetof(pci_capability_header_t, id));
+		if(id == (uint8_t)capability)
+			return (uint16_t)current;
+		
+		current = pci_read8(m_bus, m_device, m_function, (uint16_t)current + offsetof(pci_capability_header_t, next));
+	}
+
+	return -1;
+}
+
 int device_pci_bridge_pci2pci_t::initialize()
 {
 	static int next_free_bus = 1;

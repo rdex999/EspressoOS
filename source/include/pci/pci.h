@@ -32,6 +32,8 @@
 #define PCI_MECHANISM1_ADDRESS(bus, device, function, offset) \
 	(((uint32_t)(bus) << 16) | ((uint32_t)(device) << 11) | ((uint32_t)(function) << 8) | ((uint32_t)(offset) & 0xFC) | (1 << 31))
 
+#define PCI_STATUS_CAPABILITIES		(1 << 4)
+
 #define PCI_CLASSCODE_MASS_STORAGE 	1
 
 #define PCI_SUBCLASS_NVM			8
