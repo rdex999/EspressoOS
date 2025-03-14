@@ -34,6 +34,25 @@
 
 #define PCI_STATUS_CAPABILITIES		(1 << 4)
 
+#define PCI_BAR_GET_TYPE(bar)			(((bar) >> 1) & 0b11)
+#define PCI_BAR_GET_PREFETCHABLE(bar)	(((bar) >> 3) & 0b1)
+
+#define PCI_BAR_TYPE_64BIT			0b10
+#define PCI_BAR_TYPE_32BIT			0b00
+
+/* 
+ * For information about MSI and that stuff see the PCI Local Bus 3.0 specification page 231 at:
+ * https://lekensteyn.nl/files/docs/PCI_SPEV_V3_0.pdf
+ */
+
+#define PCI_MSI_REG_CONTROL_ENABLE 									(1 << 0)
+#define PCI_MSI_REG_CONTROL_MULTIPLE_MSG_CAPABLE(control, count)	(1 << ((control) >> 1))				/* vectors=2**CAPABLE */
+#define PCI_MSI_REG_CONTROL_MULTIPLE_MSG_ENABLE_SET(control, count) (((control) & ~0x70) | (log2(ALIGN_UP_POWER2(count)) << 4))	/* vectors=2**ENABLE */
+#define PCI_MSI_REG_CONTROL_MULTIPLE_MSG_ENABLE_GET(control) 		(1 << ((control) >> 4))
+
+#define PCI_MSIX_REG_BAR_ADDR_BAR_IDX(reg)	((reg) & 0b111)
+#define PCI_MSIX_REG_BAR_ADDR_OFFSET(reg)	((reg) & ~0b111)
+
 #define PCI_CLASSCODE_MASS_STORAGE 	1
 
 #define PCI_SUBCLASS_NVM			8
@@ -116,7 +135,18 @@ typedef struct pci_capability_header
 	uint8_t next;
 } __attribute__((packed)) pci_capability_header_t;
 
-typedef struct pci_capability_msi
+typedef struct pci_capability_msi32
+{
+	pci_capability_header_t header;
+	uint16_t message_control;
+	uint32_t message_address;
+	uint16_t message_data;
+	uint16_t reserved;
+	uint32_t mask;
+	uint32_t pending;
+} __attribute__((packed)) pci_capability_msi32_t;
+
+typedef struct pci_capability_msi64
 {
 	pci_capability_header_t header;
 	uint16_t message_control;
@@ -125,21 +155,29 @@ typedef struct pci_capability_msi
 	uint16_t reserved;
 	uint32_t mask;
 	uint32_t pending;
-} __attribute__((packed)) pci_capability_msi_t;
+} __attribute__((packed)) pci_capability_msi64_t;
 
-/* In the MSI-X capapility register, there are two fields (message table and pending bit) that use the same structure. */
-typedef struct pci_capability_msix_bar_addr
+typedef struct pci_msix_table_entry
 {
-	uint32_t bar_index		: 3;		/* BIR */
-	uint32_t offset			: 29;
-} __attribute__((packed)) pci_capability_msix_bar_addr_t;
+	uint64_t message_address;
+	uint32_t message_data;
+	uint32_t message_control;
+} __attribute__((packed)) pci_msix_table_entry_t;
+
+typedef struct pci_msix_msg_control
+{
+	uint16_t table_length	: 11;			/* This is the amount of entries in the msix table minus 1. */
+	uint16_t reserved		: 3;
+	uint16_t mask			: 1;			/* If set, all interrupts are disabled for the device. */
+	uint16_t enable			: 1;			/* If 1, MSI-X is enabled. 0 - MSI-X is disabled. */
+} __attribute__((packed)) pci_msix_msg_control_t;
 
 typedef struct pci_capability_msix
 {
 	pci_capability_header_t header;
-	uint16_t message_control;
-	pci_capability_msix_bar_addr_t table;
-	pci_capability_msix_bar_addr_t pending;
+	pci_msix_msg_control_t message_control;
+	uint32_t table;							/* Use PCI_MSIX_REG_BAR_ADDR_* macros for accessing the BIR and the offset. */
+	uint32_t pending;						/* Use PCI_MSIX_REG_BAR_ADDR_* macros for accessing the BIR and the offset. */
 } __attribute__((packed)) pci_capability_msix_t;
 
 /* Initialize PCI, detect available access mechanisms. Returns 0 on success, an error code otherwise. */

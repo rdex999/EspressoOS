@@ -29,10 +29,13 @@ extern char _kernel_end;
 #define ALIGN_DOWN(num, align)			((num) - (num) % (align))
 #define IS_ALIGNED(num, align)			((num) % (align) == 0)
 #define DIV_ROUND_UP(num, denominator) 	(((num) + (denominator) - 1) / (denominator))
+#define ALIGN_UP_POWER2(num)			((num) == 1 ? 1 : 1 << log2(num))
 #define KERNEL_END 						((void*)&_kernel_end)
 #define MIN(a, b) 						((a) < (b) ? (a) : (b))
 #define MAX(a, b) 						((a) > (b) ? (a) : (b))
 #define ARR_LEN(arr)					(sizeof((arr)) / sizeof((arr)[0]))
+
+inline uint32_t log2(uint32_t num) 	{ if(num == 0) return 0; return 32 - __builtin_clz(num) - 1; }
 
 /* Idk, for now i wont create a gdt.h header, as its realy rarely used. */
 #define GDT_CODE_SELECTOR 8

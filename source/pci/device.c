@@ -79,16 +79,51 @@ bool device_pci_t::is_device(const device_t* device) const
 	return pci_device->m_device_id == m_device_id;
 }
 
-void* device_pci_t::map_bar64(uint8_t bar, uint64_t flags, size_t pages)
+int device_pci_t::msix_init(uint16_t msi_capability) const
 {
-	phys_addr_t physical = ~(uint64_t)0xF & pci_read64(
+	if(msi_capability == (uint16_t)-1)
+		return ERR_INVALID_PARAMETER;
+	
+	// uint16_t message_control = pci_read16(m_bus, m_device, m_function, offsetof(pci_capability_msi32_t, message_control));
+
+	return SUCCESS;
+}
+
+void* device_pci_t::map_bar(uint8_t bar, size_t pages)
+{
+	uint32_t low = pci_read32(
 		m_bus, 
 		m_device, 
-		m_function,
+		m_function, 
 		offsetof(pci_config_t, device.base_address[0]) + bar * sizeof(uint32_t)
 	);
 
-	return (void*)vmm_map_physical_pages(physical, flags, pages);
+	uint64_t flags = VMM_PAGE_P | VMM_PAGE_RW;
+	phys_addr_t physical = (uint64_t)low & ~0xF;
+
+	if(PCI_BAR_GET_TYPE(low) == PCI_BAR_TYPE_64BIT)
+	{
+		uint32_t high = pci_read32(
+			m_bus, 
+			m_device, 
+			m_function, 
+			offsetof(pci_config_t, device.base_address[0]) + (bar + 1) * sizeof(uint32_t)
+		);
+
+		physical |= (uint64_t)high << 32;
+	}
+
+	/* The osdev wiki states that if a page is prefetchable, paging should mark it as write-through for maximum performance. */
+	if(PCI_BAR_GET_PREFETCHABLE(low) == 1)
+		flags |= VMM_PAGE_PWT;
+	else
+		flags |= VMM_PAGE_PCD | VMM_PAGE_PTE_PAT;
+
+	return (void*)vmm_map_physical_pages(
+		physical, 
+		flags, 
+		pages
+	);
 }
 
 uint16_t device_pci_t::find_capability(pci_capability_id_t capability) const

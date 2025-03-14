@@ -27,13 +27,13 @@ int device_storage_pci_nvme_t::initialize()
 	if(status != SUCCESS)
 		return status;
 	
-	m_mmio = (nvme_registers_t*)device_pci_t::map_bar64(
-		0,
-		VMM_PAGE_P | VMM_PAGE_RW | VMM_PAGE_PCD | VMM_PAGE_PTE_PAT,
-		1
-	);
+	m_mmio = (nvme_registers_t*)device_pci_t::map_bar(0, 1);
 	if(m_mmio == (void*)-1)
 		return ERR_OUT_OF_MEMORY;
+
+	status = device_pci_t::msix_init();
+	if(status != SUCCESS)
+		return status;
 
 	return SUCCESS;
 }

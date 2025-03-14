@@ -8,6 +8,9 @@
 		"cstddef": "cpp",
 		"random": "cpp",
 		"chrono": "cpp",
-		"new": "cpp"
+		"new": "cpp",
+		"bitset": "cpp",
+		"algorithm": "cpp",
+		"format": "cpp"
 	}
 }
