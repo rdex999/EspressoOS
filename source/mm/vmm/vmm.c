@@ -235,6 +235,17 @@ virt_addr_t vmm_map_physical_page(phys_addr_t address, uint64_t flags)
 
 virt_addr_t vmm_map_physical_pages(phys_addr_t address, uint64_t flags, size_t count)
 {
+	virt_addr_t mapped_virt = vmm_get_virtual_of(address);
+	if(mapped_virt != (virt_addr_t)-1)
+	{
+		uint64_t* pte = vmm_get_pte(mapped_virt);
+		if(pte != NULL)
+		{
+			if(VMM_ENTRY_BASE_FLAGS(*pte) == flags)
+				return (virt_addr_t)-1;
+		}
+	}
+
 	virt_addr_t vaddr = vmm_alloc_virtual_pages(count);
 	if(vaddr == (virt_addr_t)-1)
 		return (virt_addr_t)-1;

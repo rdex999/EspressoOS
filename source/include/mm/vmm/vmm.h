@@ -73,6 +73,8 @@ typedef uint64_t virt_addr_t;
 #define VMM_PAGE_PDE_PDPE_PAT	(1 << 12)	/* Page Attribute Table, for page directory entries and page directory pointer table entries. */
 #define VMM_PAGE_NX 			(1 << 63)	/* No Execute, for page table entries */
 
+#define VMM_ENTRY_BASE_FLAGS(entry)			((entry) & ((virt_addr_t)0x1FFF | ((virt_addr_t)1 << 63)))
+
 #define VMM_VADDR_PML4E_IDX(vaddr) 			(((vaddr) >> 39) & (virt_addr_t)0x1FF)
 #define VMM_VADDR_PDPE_IDX(vaddr) 			(((vaddr) >> 30) & (virt_addr_t)0x1FF)
 #define VMM_VADDR_PDE_IDX(vaddr)			(((vaddr) >> 21) & (virt_addr_t)0x1FF)

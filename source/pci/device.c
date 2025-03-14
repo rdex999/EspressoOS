@@ -20,6 +20,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include "mm/vmm/vmm.h"
+#include "common.h"
 
 int device_pci_t::initialize()
 {
@@ -79,17 +80,80 @@ bool device_pci_t::is_device(const device_t* device) const
 	return pci_device->m_device_id == m_device_id;
 }
 
-int device_pci_t::msix_init(uint16_t msi_capability) const
+int device_pci_t::msix_init(uint16_t msi_capability)
 {
 	if(msi_capability == (uint16_t)-1)
 		return ERR_INVALID_PARAMETER;
-	
-	// uint16_t message_control = pci_read16(m_bus, m_device, m_function, offsetof(pci_capability_msi32_t, message_control));
 
+	pci_msix_msg_control_t message_control = (pci_msix_msg_control_t)pci_read16(
+		m_bus, 
+		m_device, 
+		m_function, 
+		msi_capability + offsetof(pci_capability_msix_t, message_control)
+	);
+
+	message_control.enable = 1;		/* Enable MSI-X */
+	message_control.mask = 1;		/* Mask (disable) all interrupts. */
+
+	pci_write16(
+		m_bus, 
+		m_device, 
+		m_function, 
+		msi_capability + offsetof(pci_capability_msix_t, message_control), 
+		message_control.as_uint
+	);
+
+	uint32_t table_desc = pci_read32(
+		m_bus, 
+		m_device, 
+		m_function, 
+		msi_capability + offsetof(pci_capability_msix_t, table_descriptor)
+	);
+	uint8_t table_bar_index = PCI_MSIX_REG_BAR_ADDR_BAR_IDX(table_desc);
+	uint32_t table_offset = PCI_MSIX_REG_BAR_ADDR_OFFSET(table_desc);
+	size_t table_pages = DIV_ROUND_UP(
+		table_offset + (message_control.table_length + 1) * sizeof(pci_msix_table_entry_t), 
+		VMM_PAGE_SIZE
+	);
+
+	uint32_t pending_desc = pci_read32(
+		m_bus, 
+		m_device, 
+		m_function, 
+		msi_capability + offsetof(pci_capability_msix_t, pending_descriptor)
+	);
+	uint8_t pending_bar_index = PCI_MSIX_REG_BAR_ADDR_BAR_IDX(pending_desc);
+	uint32_t pending_offset = PCI_MSIX_REG_BAR_ADDR_OFFSET(pending_desc);
+	size_t pending_pages = DIV_ROUND_UP(pending_offset + DIV_ROUND_UP((message_control.table_length + 1), 8), VMM_PAGE_SIZE);	/* Amount of bytes for the bitmap */
+
+	if(pending_bar_index == table_bar_index)
+	{
+		size_t pages = MAX(table_pages, pending_pages);
+		void* mapped_bar = map_bar(table_bar_index, pages);
+		if(mapped_bar == (void*)-1)
+			return ERR_OUT_OF_MEMORY;
+		
+		m_msix_table = (pci_msix_table_entry_t*)((uint8_t*)mapped_bar + (uint64_t)table_offset);
+		m_msix_pending = (pci_msix_pending_entry_t*)((uint8_t*)mapped_bar + (uint64_t)pending_offset);
+	}
+	else
+	{
+		void* mapped_table_bar = map_bar(table_bar_index, table_pages);
+		if(mapped_table_bar == (void*)-1)
+			return ERR_OUT_OF_MEMORY;
+
+		void* mapped_pending_bar = map_bar(pending_bar_index, pending_pages);
+		if(mapped_pending_bar == (void*)-1)
+			return ERR_OUT_OF_MEMORY;
+
+		m_msix_table = (pci_msix_table_entry_t*)((uint8_t*)mapped_table_bar + (uint64_t)table_offset);
+		m_msix_pending = (pci_msix_pending_entry_t*)((uint8_t*)mapped_pending_bar + (uint64_t)pending_offset);
+	}
+	
 	return SUCCESS;
 }
 
-void* device_pci_t::map_bar(uint8_t bar, size_t pages)
+void* device_pci_t::map_bar(uint8_t bar, size_t pages) const
 {
 	uint32_t low = pci_read32(
 		m_bus, 

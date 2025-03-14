@@ -164,20 +164,31 @@ typedef struct pci_msix_table_entry
 	uint32_t message_control;
 } __attribute__((packed)) pci_msix_table_entry_t;
 
+typedef uint64_t pci_msix_pending_entry_t;	/* PBA entry, each bit corresponds to an MSI-X table entry. */
+
 typedef struct pci_msix_msg_control
 {
-	uint16_t table_length	: 11;			/* This is the amount of entries in the msix table minus 1. */
-	uint16_t reserved		: 3;
-	uint16_t mask			: 1;			/* If set, all interrupts are disabled for the device. */
-	uint16_t enable			: 1;			/* If 1, MSI-X is enabled. 0 - MSI-X is disabled. */
+	inline pci_msix_msg_control(uint16_t value) { as_uint = value; }
+
+	union
+	{
+		struct
+		{
+			uint16_t table_length	: 11;			/* This is the amount of entries in the msix table minus 1. */
+			uint16_t reserved		: 3;
+			uint16_t mask			: 1;			/* If set, all interrupts are disabled for the device. */
+			uint16_t enable			: 1;			/* If 1, MSI-X is enabled. 0 - MSI-X is disabled. */
+		} __attribute__((packed));
+		uint16_t as_uint;
+	} __attribute__((packed));
 } __attribute__((packed)) pci_msix_msg_control_t;
 
 typedef struct pci_capability_msix
 {
 	pci_capability_header_t header;
 	pci_msix_msg_control_t message_control;
-	uint32_t table;							/* Use PCI_MSIX_REG_BAR_ADDR_* macros for accessing the BIR and the offset. */
-	uint32_t pending;						/* Use PCI_MSIX_REG_BAR_ADDR_* macros for accessing the BIR and the offset. */
+	uint32_t table_descriptor;							/* Use PCI_MSIX_REG_BAR_ADDR_* macros for accessing the BIR and the offset. */
+	uint32_t pending_descriptor;						/* Use PCI_MSIX_REG_BAR_ADDR_* macros for accessing the BIR and the offset. */
 } __attribute__((packed)) pci_capability_msix_t;
 
 /* Initialize PCI, detect available access mechanisms. Returns 0 on success, an error code otherwise. */
