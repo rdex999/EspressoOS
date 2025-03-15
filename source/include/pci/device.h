@@ -39,6 +39,14 @@ protected:
 	virtual bool is_device(const device_t* device) const override;
 
 	/* 
+	 * Map <pages> pages of a 64 bit Base Address Register (bar). Sets <flags> as the virtual address flags .
+	 * Uses bar <bar> as the low 32 bits, and bar <bar>+1 as the high 32 bits of the physical address. 
+	 * <bar> is the number of the bar (bar 0, bar 1, ...)
+	 * Returns a valid pointer on success, -1 on failure.
+	 */
+	void* map_bar(uint8_t bar, size_t pages) const;
+
+	/* 
 	 * Initialize MSI for the device. Enable MSI and masks (disables) all interrupts.
 	 * Returns 0 on success, an error code otherwise.
 	 */
@@ -50,14 +58,6 @@ protected:
 	 * Returns 0 on success, an error code otherwise.
 	 */
 	int msix_init(uint16_t msi_capability);
-
-	/* 
-	 * Map <pages> pages of a 64 bit Base Address Register (bar). Sets <flags> as the virtual address flags .
-	 * Uses bar <bar> as the low 32 bits, and bar <bar>+1 as the high 32 bits of the physical address. 
-	 * <bar> is the number of the bar (bar 0, bar 1, ...)
-	 * Returns a valid pointer on success, -1 on failure.
-	 */
-	void* map_bar(uint8_t bar, size_t pages) const;
 
 	/* 
 	 * Find a capability of <capability> ID in the device's capabilities linked list.

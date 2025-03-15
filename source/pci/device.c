@@ -85,22 +85,22 @@ int device_pci_t::msix_init(uint16_t msi_capability)
 	if(msi_capability == (uint16_t)-1)
 		return ERR_INVALID_PARAMETER;
 
-	pci_msix_msg_control_t message_control = (pci_msix_msg_control_t)pci_read16(
+	uint16_t message_control = pci_read16(
 		m_bus, 
 		m_device, 
 		m_function, 
 		msi_capability + offsetof(pci_capability_msix_t, message_control)
 	);
 
-	message_control.enable = 1;		/* Enable MSI-X */
-	message_control.mask = 1;		/* Mask (disable) all interrupts. */
+	message_control |= PCI_MSIX_REG_CTRL_ENABLE;		/* Enable MSI-X */
+	message_control |= PCI_MSIX_REG_CTRL_MASK;		/* Mask (disable) all interrupts. */
 
 	pci_write16(
 		m_bus, 
 		m_device, 
 		m_function, 
 		msi_capability + offsetof(pci_capability_msix_t, message_control), 
-		message_control.as_uint
+		message_control
 	);
 
 	uint32_t table_desc = pci_read32(
@@ -112,7 +112,7 @@ int device_pci_t::msix_init(uint16_t msi_capability)
 	uint8_t table_bar_index = PCI_MSIX_REG_BAR_ADDR_BAR_IDX(table_desc);
 	uint32_t table_offset = PCI_MSIX_REG_BAR_ADDR_OFFSET(table_desc);
 	size_t table_pages = DIV_ROUND_UP(
-		table_offset + (message_control.table_length + 1) * sizeof(pci_msix_table_entry_t), 
+		table_offset + PCI_MSIX_REG_CTRL_GET_TABLE_LENGTH(message_control) * sizeof(pci_msix_table_entry_t), 
 		VMM_PAGE_SIZE
 	);
 
@@ -124,7 +124,10 @@ int device_pci_t::msix_init(uint16_t msi_capability)
 	);
 	uint8_t pending_bar_index = PCI_MSIX_REG_BAR_ADDR_BAR_IDX(pending_desc);
 	uint32_t pending_offset = PCI_MSIX_REG_BAR_ADDR_OFFSET(pending_desc);
-	size_t pending_pages = DIV_ROUND_UP(pending_offset + DIV_ROUND_UP((message_control.table_length + 1), 8), VMM_PAGE_SIZE);	/* Amount of bytes for the bitmap */
+	size_t pending_pages = DIV_ROUND_UP(
+		pending_offset + DIV_ROUND_UP(PCI_MSIX_REG_CTRL_GET_TABLE_LENGTH(message_control), 8), 	/* Amount of bytes for the bitmap */
+		VMM_PAGE_SIZE
+	);	
 
 	if(pending_bar_index == table_bar_index)
 	{

@@ -50,8 +50,11 @@
 #define PCI_MSI_REG_CONTROL_MULTIPLE_MSG_ENABLE_SET(control, count) (((control) & ~0x70) | (log2(ALIGN_UP_POWER2(count)) << 4))	/* vectors=2**ENABLE */
 #define PCI_MSI_REG_CONTROL_MULTIPLE_MSG_ENABLE_GET(control) 		(1 << ((control) >> 4))
 
-#define PCI_MSIX_REG_BAR_ADDR_BAR_IDX(reg)	((reg) & 0b111)
-#define PCI_MSIX_REG_BAR_ADDR_OFFSET(reg)	((reg) & ~0b111)
+#define PCI_MSIX_REG_CTRL_GET_TABLE_LENGTH(control)					(((control) & 0x7FF) + 1) /* Table length is 0 based, so add 1. */
+#define PCI_MSIX_REG_CTRL_MASK										(1 << 14)
+#define PCI_MSIX_REG_CTRL_ENABLE									(1 << 15)
+#define PCI_MSIX_REG_BAR_ADDR_BAR_IDX(reg)							((reg) & 0b111)
+#define PCI_MSIX_REG_BAR_ADDR_OFFSET(reg)							((reg) & ~0b111)
 
 #define PCI_CLASSCODE_MASS_STORAGE 	1
 
@@ -166,27 +169,10 @@ typedef struct pci_msix_table_entry
 
 typedef uint64_t pci_msix_pending_entry_t;	/* PBA entry, each bit corresponds to an MSI-X table entry. */
 
-typedef struct pci_msix_msg_control
-{
-	inline pci_msix_msg_control(uint16_t value) { as_uint = value; }
-
-	union
-	{
-		struct
-		{
-			uint16_t table_length	: 11;			/* This is the amount of entries in the msix table minus 1. */
-			uint16_t reserved		: 3;
-			uint16_t mask			: 1;			/* If set, all interrupts are disabled for the device. */
-			uint16_t enable			: 1;			/* If 1, MSI-X is enabled. 0 - MSI-X is disabled. */
-		} __attribute__((packed));
-		uint16_t as_uint;
-	} __attribute__((packed));
-} __attribute__((packed)) pci_msix_msg_control_t;
-
 typedef struct pci_capability_msix
 {
 	pci_capability_header_t header;
-	pci_msix_msg_control_t message_control;
+	uint16_t message_control;
 	uint32_t table_descriptor;							/* Use PCI_MSIX_REG_BAR_ADDR_* macros for accessing the BIR and the offset. */
 	uint32_t pending_descriptor;						/* Use PCI_MSIX_REG_BAR_ADDR_* macros for accessing the BIR and the offset. */
 } __attribute__((packed)) pci_capability_msix_t;
