@@ -23,7 +23,7 @@
 #include "acpi/acpi.h"
 #include "mm/vmm/vmm.h"
 
-static apic_ioapic_descriptor_t* s_ioapic_descriptor;
+static ioapic_descriptor_t* s_ioapic_descriptor;
 
 /* 
  * The virtual address override, represents the physical address of the mmio for all local APIC's on the system.
@@ -57,7 +57,7 @@ int apic_init()
 		case ACPI_MADT_TYPE_IOAPIC:
 		{
 			acpi_madt_record_ioapic_t* ioapic_record = (acpi_madt_record_ioapic_t*)record;
-			status = apic_ioapic_init(ioapic_record);
+			status = ioapic_init(ioapic_record);
 			if(status != SUCCESS)
 				goto cleanup;
 
@@ -86,7 +86,7 @@ int apic_init()
 		}
 	}
 
-	status = apic_lapic_init();
+	status = lapic_init();
 
 cleanup:
 	free(madt);
@@ -103,11 +103,11 @@ void pic8259_disable()
 
 int apic_map_irq(uint8_t irq, uint8_t interrupt)
 {
-	apic_ioapic_descriptor_t* ioapic = s_ioapic_descriptor;
+	ioapic_descriptor_t* ioapic = s_ioapic_descriptor;
 	while(ioapic)
 	{
-		if(apic_ioapic_irq_in_range(ioapic, irq))
-			return apic_ioapic_map_irq(ioapic, irq, interrupt);
+		if(ioapic_irq_in_range(ioapic, irq))
+			return ioapic_map_irq(ioapic, irq, interrupt);
 		
 		ioapic = ioapic->next;
 	}
@@ -115,12 +115,12 @@ int apic_map_irq(uint8_t irq, uint8_t interrupt)
 	return ERR_IRQ_NOT_SUPPORTED;
 }
 
-int apic_ioapic_init(acpi_madt_record_ioapic_t* ioapic_record)
+int ioapic_init(acpi_madt_record_ioapic_t* ioapic_record)
 {
 	if(!ioapic_record)
 		return ERR_INVALID_PARAMETER;
 	
-	apic_ioapic_descriptor_t* descriptor = (apic_ioapic_descriptor_t*)malloc(sizeof(apic_ioapic_descriptor_t));
+	ioapic_descriptor_t* descriptor = (ioapic_descriptor_t*)malloc(sizeof(ioapic_descriptor_t));
 	if(!descriptor)
 		return ERR_OUT_OF_MEMORY;
 
@@ -155,9 +155,9 @@ int apic_ioapic_init(acpi_madt_record_ioapic_t* ioapic_record)
 	return SUCCESS;
 }
 
-int apic_ioapic_map_irq(const apic_ioapic_descriptor_t* ioapic, uint8_t irq, uint8_t interrupt)
+int ioapic_map_irq(const ioapic_descriptor_t* ioapic, uint8_t irq, uint8_t interrupt)
 {
-	if(!ioapic || !apic_ioapic_irq_in_range(ioapic, irq))
+	if(!ioapic || !ioapic_irq_in_range(ioapic, irq))
 		return ERR_INVALID_PARAMETER;
 
 	uint8_t ioapic_irq = irq - ioapic->first_irq;
@@ -166,13 +166,11 @@ int apic_ioapic_map_irq(const apic_ioapic_descriptor_t* ioapic, uint8_t irq, uin
 	 * TODO: When making multiprocessing and all of that, 
 	 * find the core with least interrupts and map the interrupt to it. 
 	 */
-	uint32_t ebx, unused;
-	cpuid(CPUID_CODE_GET_FEATURES, &unused, &ebx, &unused, &unused);
-	uint8_t local_apic_id = CPUID_FEATURE_EBX_INIT_APIC_ID(ebx);
+	uint8_t local_apic_id = lapic_alloc();
 
 	uint32_t irq_redtbl_reg = APIC_IOAPIC_REG_IOREDTBL(ioapic_irq);
 
-	apic_ioapic_redtbl_entry_t entry = {
+	ioapic_redtbl_entry_t entry = {
 		.interrupt 			= interrupt,
 		.delivery_mode 		= APIC_IOAPIC_REDTBL_DELIVERY_MODE_FIXED,
 		.destination_mode 	= APIC_IOAPIC_REDTBL_DESTINATION_MODE_PHYSICAL,
@@ -185,30 +183,30 @@ int apic_ioapic_map_irq(const apic_ioapic_descriptor_t* ioapic, uint8_t irq, uin
 		.destination		= local_apic_id
 	};
 
-	apic_ioapic_write64(ioapic, irq_redtbl_reg, *(uint64_t*)&entry);		/* Cant cast directly to uint64_t, so do that. */
+	ioapic_write64(ioapic, irq_redtbl_reg, *(uint64_t*)&entry);		/* Cant cast directly to uint64_t, so do that. */
 
 	return SUCCESS;
 }
 
-bool apic_ioapic_irq_in_range(const apic_ioapic_descriptor_t* ioapic, uint8_t irq)
+bool ioapic_irq_in_range(const ioapic_descriptor_t* ioapic, uint8_t irq)
 {
 	if(!ioapic)
 		return false;
 
-	uint32_t version_reg = apic_ioapic_read32(ioapic, APIC_IOAPIC_REG_IOAPICVER);
+	uint32_t version_reg = ioapic_read32(ioapic, APIC_IOAPIC_REG_IOAPICVER);
 	uint32_t max_redtbl = APIC_IOAPIC_IOAPICVER_MAX_REDTBL(version_reg);
 	uint8_t last_irq = ioapic->first_irq + APIC_IOAPIC_REDTBL_TO_IRQ(max_redtbl);
 
 	return irq > ioapic->first_irq && irq <= last_irq;
 }
 
-uint32_t apic_ioapic_read32(const apic_ioapic_descriptor_t* ioapic, uint8_t reg)
+uint32_t ioapic_read32(const ioapic_descriptor_t* ioapic, uint8_t reg)
 {
 	*(uint32_t volatile*)(ioapic->mmio + APIC_IOAPIC_IOREGSEL) = (uint32_t)reg;
 	return *(uint32_t volatile*)(ioapic->mmio + APIC_IOAPIC_IOREGWIN);
 }
 
-uint64_t apic_ioapic_read64(const apic_ioapic_descriptor_t* ioapic, uint8_t reg)
+uint64_t ioapic_read64(const ioapic_descriptor_t* ioapic, uint8_t reg)
 {
 	uint32_t low, high;
 	
@@ -221,13 +219,13 @@ uint64_t apic_ioapic_read64(const apic_ioapic_descriptor_t* ioapic, uint8_t reg)
 	return (uint64_t)low | ((uint64_t)high << 32);
 }
 
-void apic_ioapic_write32(const apic_ioapic_descriptor_t* ioapic, uint8_t reg, uint32_t value)
+void ioapic_write32(const ioapic_descriptor_t* ioapic, uint8_t reg, uint32_t value)
 {
 	*(uint32_t volatile*)(ioapic->mmio + APIC_IOAPIC_IOREGSEL) = (uint32_t)reg;
 	*(uint32_t volatile*)(ioapic->mmio + APIC_IOAPIC_IOREGWIN) = value;
 }
 
-void apic_ioapic_write64(const apic_ioapic_descriptor_t* ioapic, uint8_t reg, uint64_t value)
+void ioapic_write64(const ioapic_descriptor_t* ioapic, uint8_t reg, uint64_t value)
 {
 	*(uint32_t volatile*)(ioapic->mmio + APIC_IOAPIC_IOREGSEL) = (uint32_t)reg;
 	*(uint32_t volatile*)(ioapic->mmio + APIC_IOAPIC_IOREGWIN) = (uint32_t)value;
@@ -236,7 +234,7 @@ void apic_ioapic_write64(const apic_ioapic_descriptor_t* ioapic, uint8_t reg, ui
 	*(uint32_t volatile*)(ioapic->mmio + APIC_IOAPIC_IOREGWIN) = (uint32_t)(value >> 32);
 }
 
-int apic_lapic_init()
+int lapic_init()
 {
 	if(s_lapic_address_override == (uint64_t)-1)
 	{
@@ -257,13 +255,19 @@ int apic_lapic_init()
 	}
 
 	/* Spurious interrupt = 0xFF, set enable local apic bit (0x100) */
-	uint32_t old_spurious = apic_lapic_read_reg(APIC_LAPIC_REG_SPURIOUS_INTERRUPT_VECTOR);
-	apic_lapic_write_reg(APIC_LAPIC_REG_SPURIOUS_INTERRUPT_VECTOR, old_spurious | 0xFF | 0x100);	
+	uint32_t old_spurious = lapic_read_reg(LAPIC_REG_SPURIOUS_INT_VECTOR);
+	lapic_write_reg(LAPIC_REG_SPURIOUS_INT_VECTOR, old_spurious | 0xFF | 0x100);	
 
 	return SUCCESS;
 }
 
-uint64_t apic_lapic_get_mmio()
+uint32_t lapic_alloc()
+{
+	/* For now, all interrupts shall go to the BSP (Boot Strap Processor, basicaly the default one) */
+	return lapic_read_reg(LAPIC_REG_ID);
+}
+
+uint64_t lapic_get_mmio()
 {
 	if(s_lapic_address_override == (uint64_t)-1)
 	{
@@ -279,18 +283,18 @@ uint64_t apic_lapic_get_mmio()
 	return s_lapic_address_override;
 }
 
-uint32_t apic_lapic_read_reg(uint16_t reg)
+uint32_t lapic_read_reg(uint16_t reg)
 {
-	uint8_t* mmio = (uint8_t*)apic_lapic_get_mmio();
+	uint8_t* mmio = (uint8_t*)lapic_get_mmio();
 	if(mmio)
 		return *(uint32_t*)(mmio + (uint64_t)reg);
 	
 	return 0;
 }
 
-void apic_lapic_write_reg(uint16_t reg, uint32_t value)
+void lapic_write_reg(uint16_t reg, uint32_t value)
 {
-	uint8_t* mmio = (uint8_t*)apic_lapic_get_mmio();
+	uint8_t* mmio = (uint8_t*)lapic_get_mmio();
 	if(mmio)
 		*(uint32_t*)(mmio + (uint64_t)reg) = value; 
 }

@@ -60,7 +60,7 @@ protected:
 	int msix_init();
 
 	/* Unmask all interrupts for this device. Clears the mask bit in the MSIX-X control register. */
-	int msix_unmask_all();
+	void msix_unmask_all() const;
 
 	const uint8_t m_bus;
 	const uint8_t m_device;

@@ -58,16 +58,20 @@
 #define APIC_IOAPIC_REDTBL_TRIGGER_MODE_EDGE			0
 #define APIC_IOAPIC_REDTBL_TRIGGER_MODE_LEVEL			1
 
-#define APIC_LAPIC_REG_SPURIOUS_INTERRUPT_VECTOR	0xF0
+/* For an explanation about these registers, see https://wiki.osdev.org/APIC#Local_APIC_registers */
+#define LAPIC_REG_ID									0x20
+#define LAPIC_REG_VERSION								0x30
+#define LAPIC_REG_EOI									0xB0
+#define LAPIC_REG_SPURIOUS_INT_VECTOR					0xF0
 
-typedef struct apic_ioapic_descriptor
+typedef struct ioapic_descriptor
 {
 	uint8_t* mmio;
 	uint8_t first_irq;
-	struct apic_ioapic_descriptor* next;
-} apic_ioapic_descriptor_t;
+	struct ioapic_descriptor* next;
+} ioapic_descriptor_t;
 
-typedef struct apic_ioapic_redtbl_entry
+typedef struct ioapic_redtbl_entry
 {
 	uint64_t interrupt 			: 8;
 	uint64_t delivery_mode 		: 3;
@@ -79,7 +83,7 @@ typedef struct apic_ioapic_redtbl_entry
 	uint64_t mask 				: 1;
 	uint64_t reserved 			: 39;
 	uint64_t destination		: 8;
-} __attribute__((packed)) apic_ioapic_redtbl_entry_t;
+} __attribute__((packed)) ioapic_redtbl_entry_t;
 
 /* 
  * Initialize all local and IO APIC's on the system. 
@@ -100,43 +104,46 @@ int apic_map_irq(uint8_t irq, uint8_t interrupt);
  * Initialize a found IO APIC. Sets IRQ's, things like that
  * Returns 0 on success, an error code otherwise.
  */
-int apic_ioapic_init(acpi_madt_record_ioapic_t* ioapic_record);
+int ioapic_init(acpi_madt_record_ioapic_t* ioapic_record);
 
 /* 
  * Map <irq> of <ioapic> to interrupt vector <interrupt>. 
  * Returns 0 on success, an error code otherwise.
  */
-int apic_ioapic_map_irq(const apic_ioapic_descriptor_t* ioapic, uint8_t irq, uint8_t interrupt);
+int ioapic_map_irq(const ioapic_descriptor_t* ioapic, uint8_t irq, uint8_t interrupt);
 
 /* Check if IRQ <irq> is in the IRQ range of IO APIC <ioapic>. Returns true if in range, false if not. */
-bool apic_ioapic_irq_in_range(const apic_ioapic_descriptor_t* ioapic, uint8_t irq);
+bool ioapic_irq_in_range(const ioapic_descriptor_t* ioapic, uint8_t irq);
 
 /* Read a 32 bit register from an IO APIC's configuration space. */
-uint32_t apic_ioapic_read32(const apic_ioapic_descriptor_t* ioapic, uint8_t reg);
+uint32_t ioapic_read32(const ioapic_descriptor_t* ioapic, uint8_t reg);
 
 /* Read a 64 bit register from an IO APIC's configuration space. */
-uint64_t apic_ioapic_read64(const apic_ioapic_descriptor_t* ioapic, uint8_t reg);
+uint64_t ioapic_read64(const ioapic_descriptor_t* ioapic, uint8_t reg);
 
 /* Write a 32 bit value into a register in an IO APIC's configuration space. */
-void apic_ioapic_write32(const apic_ioapic_descriptor_t* ioapic, uint8_t reg, uint32_t value);
+void ioapic_write32(const ioapic_descriptor_t* ioapic, uint8_t reg, uint32_t value);
 
 /* Write a 64 bit value into a register in an IO APIC's configuration space. */
-void apic_ioapic_write64(const apic_ioapic_descriptor_t* ioapic, uint8_t reg, uint64_t value);
+void ioapic_write64(const ioapic_descriptor_t* ioapic, uint8_t reg, uint64_t value);
 
 /* 
  * Initialize the local APIC of the current CPU. 
  * Return 0 on success, an error code otherwise.
  */
-int apic_lapic_init();
+int lapic_init();
+
+/* Allocate a Local APIC (a CPU) for interrupt handling. Returns the ID of the Local APIC on the CPU. */
+uint32_t lapic_alloc();
 
 /* 
  * Get the virtual address representing the physical address of the configuration space for the local APIC of the current CPU. 
  * Returns a valid virtual address on success, NULL on failure. 
  */
-uint64_t apic_lapic_get_mmio();
+uint64_t lapic_get_mmio();
 
 /* Read a register in the local APIC configuration space. */
-uint32_t apic_lapic_read_reg(uint16_t reg);
+uint32_t lapic_read_reg(uint16_t reg);
 
 /* Write to a register in the local APIC configuration space. Returns 0 on failure. */
-void apic_lapic_write_reg(uint16_t reg, uint32_t value);
+void lapic_write_reg(uint16_t reg, uint32_t value);

@@ -157,7 +157,7 @@ int device_pci_t::msix_init()
 	return SUCCESS;
 }
 
-int device_pci_t::msix_unmask_all()
+void device_pci_t::msix_unmask_all() const
 {
 	uint16_t message_control = pci_read16(
 		m_bus, 
@@ -175,8 +175,6 @@ int device_pci_t::msix_unmask_all()
 		m_msix_capability + offsetof(pci_capability_msix_t, message_control),
 		message_control
 	);
-
-	return SUCCESS;
 }
 
 void* device_pci_t::map_bar(uint8_t bar, size_t pages) const
