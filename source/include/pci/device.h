@@ -47,24 +47,20 @@ protected:
 	void* map_bar(uint8_t bar, size_t pages) const;
 
 	/* 
-	 * Initialize MSI for the device. Enable MSI and masks (disables) all interrupts.
-	 * Returns 0 on success, an error code otherwise.
-	 */
-	inline int msix_init() { return msix_init(find_capability(PCI_CAPABILITY_ID_MSIX)); };
-
-	/* 
-	 * Initialize MSI-X for the device. Enable MSI and mask all interrupts.
-	 * Instead of searching for the MSI capability register, its offset is given in the <msi_capability> parameter.
-	 * Returns 0 on success, an error code otherwise.
-	 */
-	int msix_init(uint16_t msi_capability);
-
-	/* 
 	 * Find a capability of <capability> ID in the device's capabilities linked list.
 	 * Returns an offset into the device's configuration space which has the capability.
 	 * Returns -1 on failure. (Either the device doesnt support capabilities, or the given capability is not found.)
 	 */
 	uint16_t find_capability(pci_capability_id_t capability) const;
+
+	/* 
+	 * Initialize MSI-X for the device. Enable MSI and mask all interrupts.
+	 * Returns 0 on success, an error code otherwise.
+	 */
+	int msix_init();
+
+	/* Unmask all interrupts for this device. Clears the mask bit in the MSIX-X control register. */
+	int msix_unmask_all();
 
 	const uint8_t m_bus;
 	const uint8_t m_device;
@@ -76,6 +72,7 @@ protected:
 	uint8_t m_subclass;
 	uint8_t m_prog_if;
 
+	uint16_t m_msix_capability;
 	struct pci_msix_table_entry* m_msix_table;
 	uint64_t* m_msix_pending;
 };

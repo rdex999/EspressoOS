@@ -80,26 +80,27 @@ bool device_pci_t::is_device(const device_t* device) const
 	return pci_device->m_device_id == m_device_id;
 }
 
-int device_pci_t::msix_init(uint16_t msi_capability)
+int device_pci_t::msix_init()
 {
-	if(msi_capability == (uint16_t)-1)
-		return ERR_INVALID_PARAMETER;
+	m_msix_capability = find_capability(PCI_CAPABILITY_ID_MSIX);
+	if(m_msix_capability == (uint16_t)-1)
+		return ERR_DEVICE_MSIX_NOT_SUPPORTED;
 
 	uint16_t message_control = pci_read16(
 		m_bus, 
 		m_device, 
 		m_function, 
-		msi_capability + offsetof(pci_capability_msix_t, message_control)
+		m_msix_capability + offsetof(pci_capability_msix_t, message_control)
 	);
 
 	message_control |= PCI_MSIX_REG_CTRL_ENABLE;		/* Enable MSI-X */
-	message_control |= PCI_MSIX_REG_CTRL_MASK;		/* Mask (disable) all interrupts. */
+	message_control |= PCI_MSIX_REG_CTRL_MASK;			/* Mask (disable) all interrupts. */
 
 	pci_write16(
 		m_bus, 
 		m_device, 
 		m_function, 
-		msi_capability + offsetof(pci_capability_msix_t, message_control), 
+		m_msix_capability + offsetof(pci_capability_msix_t, message_control), 
 		message_control
 	);
 
@@ -107,7 +108,7 @@ int device_pci_t::msix_init(uint16_t msi_capability)
 		m_bus, 
 		m_device, 
 		m_function, 
-		msi_capability + offsetof(pci_capability_msix_t, table_descriptor)
+		m_msix_capability + offsetof(pci_capability_msix_t, table_descriptor)
 	);
 	uint8_t table_bar_index = PCI_MSIX_REG_BAR_ADDR_BAR_IDX(table_desc);
 	uint32_t table_offset = PCI_MSIX_REG_BAR_ADDR_OFFSET(table_desc);
@@ -120,7 +121,7 @@ int device_pci_t::msix_init(uint16_t msi_capability)
 		m_bus, 
 		m_device, 
 		m_function, 
-		msi_capability + offsetof(pci_capability_msix_t, pending_descriptor)
+		m_msix_capability + offsetof(pci_capability_msix_t, pending_descriptor)
 	);
 	uint8_t pending_bar_index = PCI_MSIX_REG_BAR_ADDR_BAR_IDX(pending_desc);
 	uint32_t pending_offset = PCI_MSIX_REG_BAR_ADDR_OFFSET(pending_desc);
@@ -153,6 +154,28 @@ int device_pci_t::msix_init(uint16_t msi_capability)
 		m_msix_pending = (pci_msix_pending_entry_t*)((uint8_t*)mapped_pending_bar + (uint64_t)pending_offset);
 	}
 	
+	return SUCCESS;
+}
+
+int device_pci_t::msix_unmask_all()
+{
+	uint16_t message_control = pci_read16(
+		m_bus, 
+		m_device, 
+		m_function, 
+		m_msix_capability + offsetof(pci_capability_msix_t, message_control)
+	);
+
+	message_control &= ~PCI_MSIX_REG_CTRL_MASK;
+
+	pci_write16(
+		m_bus,
+		m_device,
+		m_function,
+		m_msix_capability + offsetof(pci_capability_msix_t, message_control),
+		message_control
+	);
+
 	return SUCCESS;
 }
 
