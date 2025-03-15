@@ -56,6 +56,19 @@
 #define PCI_MSIX_REG_BAR_ADDR_BAR_IDX(reg)							((reg) & 0b111)
 #define PCI_MSIX_REG_BAR_ADDR_OFFSET(reg)							((reg) & ~0b111)
 
+/* 
+ * See the Intel System Programming Guide for the layout of the message address and message data registers. 
+ * Page 426 at: https://www.intel.com/content/www/us/en/content-details/835758/intel-64-and-ia-32-architectures-software-developer-s-manual-combined-volumes-3a-3b-3c-and-3d-system-programming-guide.html 
+ */
+#define PCI_MSIX_MSG_ADDR_DEST_MODE									(1 << 2)		/* DM=0 and RH=1 - Destination ID is physical, DM=1 and RH=1 - Destination ID is logical, RH=0 - Independent (See intel spec)*/
+#define PCI_MSIX_MSG_ADDR_REDIRECT_HINT								(1 << 3)
+#define PCI_MSIX_MSG_ADDR_GET_LAPIC_ID(msg_addr)					(((msg_addr) >> 12) & 0xFF)
+#define PCI_MSIX_MSG_ADDR_SET_LAPIC_ID(msg_addr, id)				(((msg_addr) & (0xFF << 12)) | id)
+#define PCI_MSIX_MSG_ADDR_GET_ADDR(msg_addr)						((msg_addr) & ~0xFFFFF)
+#define PCI_MSIX_MSG_ADDR_SET_ADDR(msg_addr, address)				(((msg_addr) & ~0xFFFFF) | (address))
+
+#define PCI_MSIX_MSG_DATA_MASK										(1 << 0)	/* When set, the interrupt is masked. */
+
 #define PCI_CLASSCODE_MASS_STORAGE 	1
 
 #define PCI_SUBCLASS_NVM			8
@@ -162,9 +175,9 @@ typedef struct pci_capability_msi64
 
 typedef struct pci_msix_table_entry
 {
-	uint64_t message_address;
-	uint32_t message_data;
-	uint32_t message_control;
+	uint64_t msg_address;
+	uint32_t msg_data;
+	uint32_t msg_control;
 } __attribute__((packed)) pci_msix_table_entry_t;
 
 typedef uint64_t pci_msix_pending_entry_t;	/* PBA entry, each bit corresponds to an MSI-X table entry. */
