@@ -59,6 +59,9 @@ protected:
 	 */
 	int msix_init();
 
+	/* Mask all interrupts for this device. Sets the mask bit in the MSIX-X control register. */
+	void msix_mask_all() const;
+
 	/* Unmask all interrupts for this device. Clears the mask bit in the MSIX-X control register. */
 	void msix_unmask_all() const;
 

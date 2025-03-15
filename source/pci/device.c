@@ -177,6 +177,26 @@ void device_pci_t::msix_unmask_all() const
 	);
 }
 
+void device_pci_t::msix_mask_all() const
+{
+	uint16_t message_control = pci_read16(
+		m_bus, 
+		m_device, 
+		m_function, 
+		m_msix_capability + offsetof(pci_capability_msix_t, message_control)
+	);
+
+	message_control |= PCI_MSIX_REG_CTRL_MASK;
+
+	pci_write16(
+		m_bus,
+		m_device,
+		m_function,
+		m_msix_capability + offsetof(pci_capability_msix_t, message_control),
+		message_control
+	);
+}
+
 void* device_pci_t::map_bar(uint8_t bar, size_t pages) const
 {
 	uint32_t low = pci_read32(
