@@ -49,6 +49,9 @@ public:
 	size_t find_clear() const;
 	size_t find_clear(size_t count) const;
 
+	/* Counts the amount of set bits on total <count> bits, starting from bit <index>. */
+	size_t count_set(size_t index, size_t count) const;
+
 	/* Find a clear bit (or <count> bits) and set it to 1. Returns the index of the first allocated bit. */
 	size_t allocate();
 	size_t allocate(size_t count);
@@ -58,8 +61,8 @@ public:
 	inline void free(size_t index, size_t count) 	{ clear(index, count); };
 
 	/* Returns the amount of set bits, or the amount of clear bits. */
-	inline size_t set_count() const					{ return m_set; };
-	inline size_t clear_count() const				{ return m_clear; };
+	inline size_t get_set_count() const					{ return m_set; };
+	inline size_t get_clear_count() const				{ return m_clear; };
 
 private:
 	/* Find the first clear bit starting from <index>. */	

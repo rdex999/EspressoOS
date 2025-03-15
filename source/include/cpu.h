@@ -29,6 +29,7 @@
 
 #define CPUID_FEATURE_EDX_APIC 					(1 << 9)
 #define CPUID_FEATURE_EBX_INIT_APIC_ID(ebx)		(((ebx) >> 24) & 0xFF)
+#define CPUID_FEATURE_ECX_POPCNT       			(1 << 23)
 
 #define MSR_IA32_APIC_BASE						0x1B
 

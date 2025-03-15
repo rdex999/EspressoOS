@@ -41,12 +41,12 @@ typedef uint64_t virt_addr_t;
  * For example, to get the virtual address of 0x13000, take its block number (0x13000 / 4096) = 0x13 = 19 and use it in the map.
  * virt_addr_t vaddr = VMM_REVERSE_MAP[0x13000 / VMM_PAGE_SIZE];
  */
-#define VMM_REVERSE_MAP				((virt_addr_t*)PMM_BITMAP_END_ADDRESS)	
+#define VMM_REVERSE_MAP				((virt_addr_t*)ALIGN_UP((uint64_t)VMM_ALLOC_MAP_END, VMM_PAGE_SIZE))	
 #define VMM_REVERSE_MAP_LENGTH		g_pmm_total_blocks
 #define VMM_REVERSE_MAP_SIZE		(VMM_REVERSE_MAP_LENGTH * sizeof(virt_addr_t))
 #define VMM_REVERSE_MAP_END			(VMM_REVERSE_MAP + VMM_REVERSE_MAP_LENGTH)
 
-#define VMM_ALLOC_MAP				((void*)VMM_REVERSE_MAP_END)	/* The physical address of the alloc bitmap buffer. */
+#define VMM_ALLOC_MAP				PMM_BITMAP_END_ADDRESS	/* The physical address of the alloc bitmap buffer. */
 #define VMM_ALLOC_MAP_SIZE 			(g_pmm_total_blocks / 8llu)		/* The size of the alloc bitmap buffer in bytes. */
 #define VMM_ALLOC_MAP_END			((void*)((uint64_t)VMM_ALLOC_MAP + VMM_ALLOC_MAP_SIZE))
 

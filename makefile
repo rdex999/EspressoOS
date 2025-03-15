@@ -28,7 +28,7 @@ QEMU_FLAGS:=-m 8G -vga vmware -machine q35 -L /usr/share/OVMF/ -pflash /usr/shar
 ISO:=dist/EspressoOS.iso
 DISK_IMG:=dist/EspressoOS.img
 DISK_IMG_SIZE:=$$((1 * 1024**3))
-DEBUG_BREAKPOINT:=kernel_main
+GDB_DEBUG_BREAKPOINTS:=kernel_main kernel.c:48 isr_exception_page_fault 
 
 KERNEL_C_SOURCES:=$(shell find $(SRC) -name *.c)
 KERNEL_C_HEADERS:=$(shell find $(SRC)/include -name *.h)
@@ -149,20 +149,20 @@ debugimage:
 	$(MAKE) clean
 	$(MAKE) image CFLAGS+=-g ASFLAGS+=-g
 	$(QEMU) $(QEMU_FLAGS) -drive file=$(DISK_IMG),if=none,id=nvm -device nvme,serial=none,drive=nvm -S -s &
-	gdb $(BLD)/kernel.bin 								\
-        -ex "target remote localhost:1234" 				\
-        -ex "set disassembly-flavor intel" 				\
-        -ex "break $(DEBUG_BREAKPOINT)" -ex "continue" 	\
+	gdb $(BLD)/kernel.bin 														\
+        -ex "target remote localhost:1234" 										\
+        -ex "set disassembly-flavor intel" 										\
+		$(foreach BREAKPOINT,$(GDB_DEBUG_BREAKPOINTS),-ex "br $(BREAKPOINT)")	\
+		-ex "continue" 															\
         -ex "lay src"
 
 debugiso:
 	$(MAKE) clean
 	$(MAKE) iso CFLAGS+=-g ASFLAGS+=-g
 	$(QEMU) $(QEMU_FLAGS) -cdrom $(ISO) -S -s &
-	gdb $(BLD)/kernel.bin 								\
-		-ex "target remote localhost:1234" 				\
-		-ex "set disassembly-flavor intel" 				\
-		-ex "break $(DEBUG_BREAKPOINT)" 				\
-		-ex "break isr_exception_page_fault" 			\
-		-ex "continue" 									\
+	gdb $(BLD)/kernel.bin 														\
+		-ex "target remote localhost:1234" 										\
+		-ex "set disassembly-flavor intel" 										\
+		$(foreach BREAKPOINT,$(GDB_DEBUG_BREAKPOINTS),-ex "br $(BREAKPOINT)")	\
+		-ex "continue" 															\
 		-ex "lay src"

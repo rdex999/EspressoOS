@@ -40,3 +40,5 @@ inline uint32_t log2(uint32_t num) 	{ if(num == 0) return 0; return 32 - __built
 /* Idk, for now i wont create a gdt.h header, as its realy rarely used. */
 #define GDT_CODE_SELECTOR 8
 #define GDT_DATA_SELECTOR 8
+
+#define PANIC()							{ while(true) { asm volatile("cli"); asm volatile("hlt"); } }

@@ -27,10 +27,10 @@ int vmm_init()
 {
 	new(&g_vmm_alloc_map) bitmap_t(VMM_ALLOC_MAP, VMM_ALLOC_MAP_SIZE);
 
-	memset(VMM_REVERSE_MAP, 0xFF, VMM_REVERSE_MAP_SIZE);
+	memset(VMM_REVERSE_MAP, -1, VMM_REVERSE_MAP_SIZE);
 
 	/* Allocate the physical memory of the kernel, including the reverse mapping. +1 for page map level 4. */
-	phys_addr_t identity_map_end = ALIGN_UP((size_t)VMM_ALLOC_MAP_END, VMM_PAGE_SIZE);
+	phys_addr_t identity_map_end = ALIGN_UP((uint64_t)VMM_REVERSE_MAP_END, VMM_PAGE_SIZE);
 
 	phys_addr_t kernel_page_tables_end = vmm_init_first_tables(identity_map_end);
 	if(kernel_page_tables_end == (phys_addr_t)-1)
@@ -182,8 +182,12 @@ virt_addr_t vmm_get_virtual_of(phys_addr_t address)
 	size_t block = address / VMM_PAGE_SIZE;
 	if(block >= VMM_REVERSE_MAP_LENGTH)
 		return (virt_addr_t)-1;
-	
-	return VMM_REVERSE_MAP[block] + address % VMM_PAGE_SIZE;
+
+	virt_addr_t virt_page = VMM_REVERSE_MAP[block];
+	if(virt_page == (virt_addr_t)-1)
+		return (virt_addr_t)-1;
+
+	return virt_page + address % VMM_PAGE_SIZE;
 }
 
 void vmm_set_virtual_of(phys_addr_t paddr, virt_addr_t vaddr)

@@ -20,9 +20,9 @@
 /* TODO: Optimize this function. */
 void* memset(void* dest, int ch, size_t size)
 {
-	unsigned char* d = (unsigned char*)dest;
+	uint8_t* d = (uint8_t*)dest;
 	for(size_t i = 0; i < size; i++)
-		d[i] = (unsigned char)ch;
+		d[i] = (uint8_t)ch;
 	return dest;
 }
 

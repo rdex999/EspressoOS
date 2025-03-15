@@ -17,6 +17,8 @@
 
 #include "ds/bitmap.h"
 
+#include <stdlib.h>
+
 bitmap_t::bitmap_t(void* buffer, size_t size)
 	: m_buffer((bitmap_entry_t*)buffer), m_size(size), m_bit_count(size*8)
 {
@@ -52,8 +54,9 @@ void bitmap_t::set(size_t index, size_t count)
 	if(index + count > m_bit_count)
 		return;
 
-	if(!is_clear(index, count))								/* If there is at least on set bit, return. */
-		return;
+	size_t were_already_set = 0;	
+	if(!is_clear(index, count))								/* If there is at least one set bit, count the set bits to update m_set correctly. */
+		were_already_set = count_set(index, count);
 
 	size_t entry_index = index / BITMAP_ENTRY_BITS;			/* The entry index for <index> in the bitmap */
 	int bit_offset = index % BITMAP_ENTRY_BITS;				/* The bit offset in <entry_index> for the first bit to set */
@@ -96,8 +99,8 @@ void bitmap_t::set(size_t index, size_t count)
 	/* Set the bits that were not set in the memset */
 	m_buffer[entry_index] |= ((bitmap_entry_t)1 << to_set) - (bitmap_entry_t)1;		/* Set the remaining bits in the last entry */
 
-	m_clear -= count;
-	m_set += count;
+	m_clear -= count - were_already_set;
+	m_set += count - were_already_set;
 }
 
 void bitmap_t::clear(size_t index)
@@ -260,6 +263,49 @@ size_t bitmap_t::find_clear(size_t count) const
 		index = find_clear_from(index + count);
 	}
 	return -1;
+}
+
+size_t bitmap_t::count_set(size_t index, size_t count) const
+{
+	if(index + count >= m_bit_count || count == (size_t)0)
+		return 0;
+
+	size_t current_index = index;
+	size_t to_check = count;
+	size_t entry_index = current_index / BITMAP_ENTRY_BITS;
+	size_t set_count = 0;
+
+	if(!IS_ALIGNED(current_index, BITMAP_ENTRY_BITS))
+	{
+		/* 
+		 * Get the 64bit entry from the buffer, remove the bits that need to be aligned (shift right), 
+		 * mask the result with the amount of bits we need to check in the first entry, and count set bits on the result.
+		 */
+		int skip_on_first = (current_index % BITMAP_ENTRY_BITS);
+		int check_on_first = MIN(BITMAP_ENTRY_BITS - skip_on_first, to_check);
+		bitmap_entry_t entry = (m_buffer[entry_index] >> skip_on_first) & (((bitmap_entry_t)1 << check_on_first) - (bitmap_entry_t)1);
+		set_count += popcount64(entry);
+
+		current_index += check_on_first;
+		to_check -= check_on_first;
+		++entry_index;
+	}
+
+	if(to_check == (size_t)0)
+		return set_count;
+
+	size_t full_entries = to_check / BITMAP_ENTRY_BITS;
+	for(; entry_index < current_index / BITMAP_ENTRY_BITS + full_entries; ++entry_index)
+		set_count += popcount64(m_buffer[entry_index]);
+	
+	current_index += full_entries * BITMAP_ENTRY_BITS;
+	to_check -= full_entries * BITMAP_ENTRY_BITS;
+
+	/* Count the last bits from the last entry, if any. */
+	bitmap_entry_t entry = m_buffer[entry_index] & (((bitmap_entry_t)1 << to_check) - (bitmap_entry_t)1);
+	set_count += popcount64(entry);
+
+	return set_count;
 }
 
 size_t bitmap_t::find_clear_from(size_t index) const

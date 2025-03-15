@@ -23,6 +23,8 @@
 void* malloc(size_t size);
 void free(void* ptr);
 
+unsigned int popcount64(uint64_t number);
+
 /* Basically just malloc, use these keywords when creating/deleting objects. */
 inline void* operator new (size_t size) 			{ return malloc(size); }
 inline void* operator new[] (size_t size) 			{ return malloc(size); }
