@@ -24,6 +24,7 @@ QEMU:=qemu-system-x86_64
 # To add a pci2pci bridge use: -device pci-bridge,chassis_nr=1,id=pci_bridge1
 # To add a pcie2pci bridge use: -device pcie-pci-bridge,id=pcie_pci_bridge1
 # To add a device into a bridge use: -device <dev>,bus=pci_bridge1[,addr=x]
+# To add support for the POPCNT instruction, use: -cpu qemu64,+popcnt
 QEMU_FLAGS:=-m 8G -vga vmware -machine q35 -L /usr/share/OVMF/ -pflash /usr/share/OVMF/x64/OVMF_CODE.4m.fd
 ISO:=dist/EspressoOS.iso
 DISK_IMG:=dist/EspressoOS.img

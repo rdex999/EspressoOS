@@ -239,14 +239,41 @@ virt_addr_t vmm_map_physical_page(phys_addr_t address, uint64_t flags)
 
 virt_addr_t vmm_map_physical_pages(phys_addr_t address, uint64_t flags, size_t count)
 {
+	/* 
+	 * So if <address> is already mapped, 
+	 * for each virtual address that points to it, check if it is contiguous (Same as the previous address plus the size of a page)
+	 * and that it has the same flags as <flags>. 
+	 * If at least one of the mapped pages doesnt meet the conditions, allocate a new virtual address and map it.
+	 */
 	virt_addr_t mapped_virt = vmm_get_virtual_of(address);
 	if(mapped_virt != (virt_addr_t)-1)
 	{
 		uint64_t* pte = vmm_get_pte(mapped_virt);
-		if(pte != NULL)
+		if(pte != NULL && VMM_ENTRY_BASE_FLAGS(*pte) == flags)
 		{
-			if(VMM_ENTRY_BASE_FLAGS(*pte) == flags)
-				return (virt_addr_t)-1;
+			virt_addr_t prev_virt = mapped_virt;
+			bool already_mapped = true;
+			for(size_t i = 1; i < count; ++i)
+			{
+				virt_addr_t virt = vmm_get_virtual_of(address + i * VMM_PAGE_SIZE);
+				if(virt == prev_virt + VMM_PAGE_SIZE)
+				{
+					pte = vmm_get_pte(virt);
+					if(pte == NULL || VMM_ENTRY_BASE_FLAGS(*pte) != flags)
+					{
+						already_mapped = false;
+						break;
+					}
+					prev_virt = virt;
+				}
+				else
+				{
+					already_mapped = false;
+					break;
+				}
+			}
+			if(already_mapped)
+				return mapped_virt;
 		}
 	}
 
